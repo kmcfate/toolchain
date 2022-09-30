@@ -3,8 +3,9 @@
 # libshake 0.3.0 api1
 #
 #############################################################
-LIBSHAKE_VERSION = 0.3.0
-LIBSHAKE_SITE = $(call github,zear,libShake,$(LIBSHAKE_VERSION))
+LIBSHAKE_VERSION = 0.3.2
+LIBSHAKE_SITE = https://github.com/zear/libShake/archive/refs/tags/
+LIBSHAKE_SOURCE = v$(LIBSHAKE_VERSION).tar.gz
 LIBSHAKE_LICENSE = MIT
 LIBSHAKE_LICENSE_FILES = LICENSE.txt
 LIBSHAKE_INSTALL_STAGING = YES
