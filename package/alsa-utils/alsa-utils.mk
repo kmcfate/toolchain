@@ -1,42 +1,51 @@
 ################################################################################
 #
-# alsa-utils  1.0.28 >> 1.1.3 >> 1.1.7
+# alsa-utils
 #
 ################################################################################
 
-ALSA_UTILS_VERSION = 1.2.4
+ALSA_UTILS_VERSION = 1.2.10
 ALSA_UTILS_SOURCE = alsa-utils-$(ALSA_UTILS_VERSION).tar.bz2
 ALSA_UTILS_SITE = https://www.alsa-project.org/files/pub/utils
-ALSA_UTILS_LICENSE = GPLv2
+ALSA_UTILS_LICENSE = GPL-2.0
 ALSA_UTILS_LICENSE_FILES = COPYING
+# 0011-configure.ac-fix-UMP-support-detection.patch
+ALSA_UTILS_AUTORECONF = YES
 ALSA_UTILS_INSTALL_STAGING = YES
-ALSA_UTILS_DEPENDENCIES = host-gettext host-pkgconf alsa-lib \
-	$(if $(BR2_PACKAGE_NCURSES),ncurses)
+ALSA_UTILS_DEPENDENCIES = host-pkgconf alsa-lib \
+	$(if $(BR2_PACKAGE_NCURSES),ncurses) \
+	$(if $(BR2_PACKAGE_LIBSAMPLERATE),libsamplerate) \
+	$(TARGET_NLS_DEPENDENCIES)
 
-ALSA_UTILS_CONF_ENV = \
-	ac_cv_prog_ncurses5_config=$(STAGING_DIR)/usr/bin/ncurses6-config
-
-ALSA_UTILS_CONF_OPT = \
-	--disable-xmlto \
-	--disable-rst2man \
-	--with-curses=ncurses
-
-ifeq ($(BR2_PACKAGE_ALSA_UTILS_ALSALOOP),y)
-ALSA_UTILS_CONF_OPT += --enable-alsaloop
-else
-ALSA_UTILS_CONF_OPT += --disable-alsaloop
+ifeq ($(BR2_PACKAGE_ALSA_UTILS_ALSACTL),y)
+ALSA_UTILS_SELINUX_MODULES += alsa
 endif
 
-ifeq ($(BR2_PACKAGE_ALSA_UTILS_BAT),y)
-ALSA_UTILS_CONF_OPT += --enable-bat
-# Analysis support requires fftw single precision
-ALSA_UTILS_DEPENDENCIES += $(if $(BR2_PACKAGE_FFTW_SINGLE),fftw-single)
+ALSA_UTILS_CONF_ENV = \
+	ac_cv_prog_ncurses5_config=$(STAGING_DIR)/usr/bin/$(NCURSES_CONFIG_SCRIPTS) \
+	LIBS=$(TARGET_NLS_LIBS)
+
+ALSA_UTILS_CONF_OPTS = \
+	--disable-xmlto \
+	--disable-rst2man \
+	--with-curses=$(if $(BR2_PACKAGE_NCURSES_WCHAR),ncursesw,ncurses)
+
+ifeq ($(BR2_PACKAGE_ALSA_UTILS_ALSALOOP),y)
+ALSA_UTILS_CONF_OPTS += --enable-alsaloop
 else
-ALSA_UTILS_CONF_OPT += --disable-bat
+ALSA_UTILS_CONF_OPTS += --disable-alsaloop
 endif
 
 ifneq ($(BR2_PACKAGE_ALSA_UTILS_ALSAMIXER),y)
-ALSA_UTILS_CONF_OPT += --disable-alsamixer --disable-alsatest
+ALSA_UTILS_CONF_OPTS += --disable-alsamixer
+endif
+
+ifeq ($(BR2_PACKAGE_ALSA_UTILS_BAT),y)
+ALSA_UTILS_CONF_OPTS += --enable-bat
+# Analysis support requires fftw single precision
+ALSA_UTILS_DEPENDENCIES += $(if $(BR2_PACKAGE_FFTW_SINGLE),fftw-single)
+else
+ALSA_UTILS_CONF_OPTS += --disable-bat
 endif
 
 ALSA_UTILS_TARGETS_$(BR2_PACKAGE_ALSA_UTILS_ALSACONF) += usr/sbin/alsaconf
@@ -60,7 +69,7 @@ ALSA_UTILS_TARGETS_$(BR2_PACKAGE_ALSA_UTILS_SPEAKER_TEST) += usr/bin/speaker-tes
 define ALSA_UTILS_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/var/lib/alsa
 	for i in $(ALSA_UTILS_TARGETS_y); do \
-		$(INSTALL) -D -m 755 $(STAGING_DIR)/$$i $(TARGET_DIR)/$$i; \
+		$(INSTALL) -D -m 755 $(STAGING_DIR)/$$i $(TARGET_DIR)/$$i || exit 1; \
 	done
 	if [ -x "$(TARGET_DIR)/usr/bin/speaker-test" ]; then \
 		mkdir -p $(TARGET_DIR)/usr/share/alsa/speaker-test; \
@@ -70,14 +79,13 @@ define ALSA_UTILS_INSTALL_TARGET_CMDS
 	fi
 	if [ -x "$(TARGET_DIR)/usr/sbin/alsactl" ]; then \
 		mkdir -p $(TARGET_DIR)/usr/share/; \
-		rm -rf $(TARGET_DIR)/usr/share/alsa/; \
-		cp -rdpf $(STAGING_DIR)/usr/share/alsa/ $(TARGET_DIR)/usr/share/alsa/; \
+		cp -rdpf $(STAGING_DIR)/usr/share/alsa/* $(TARGET_DIR)/usr/share/alsa/; \
 	fi
 endef
 
 ifeq ($(BR2_PACKAGE_ALSA_UTILS_ALSACTL)$(BR2_INIT_SYSTEMD),yy)
 ALSA_UTILS_DEPENDENCIES += systemd
-ALSA_UTILS_CONF_OPT += --with-systemdsystemunitdir=/usr/lib/systemd/system
+ALSA_UTILS_CONF_OPTS += --with-systemdsystemunitdir=/usr/lib/systemd/system
 define ALSA_UTILS_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 0644 $(@D)/alsactl/alsa-restore.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/alsa-restore.service

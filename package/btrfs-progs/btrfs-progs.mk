@@ -4,31 +4,60 @@
 #
 ################################################################################
 
-BTRFS_PROGS_VERSION = 3.16
-BTRFS_PROGS_SITE = https://www.kernel.org/pub/linux/kernel/people/mason/btrfs-progs
+BTRFS_PROGS_VERSION = 5.16.2
+BTRFS_PROGS_SITE = $(BR2_KERNEL_MIRROR)/linux/kernel/people/kdave/btrfs-progs
 BTRFS_PROGS_SOURCE = btrfs-progs-v$(BTRFS_PROGS_VERSION).tar.xz
-BTRFS_PROGS_DEPENDENCIES = acl attr e2fsprogs lzo util-linux zlib
-BTRFS_PROGS_LICENSE = GPLv2
-BTRFS_PROGS_LICENSE_FILES = COPYING
+BTRFS_PROGS_DEPENDENCIES = host-pkgconf lzo util-linux zlib
+BTRFS_PROGS_CONF_OPTS = --disable-backtrace --disable-python
+BTRFS_PROGS_LICENSE = GPL-2.0, LGPL-2.1+ (libbtrfsutil)
+BTRFS_PROGS_LICENSE_FILES = COPYING libbtrfsutil/COPYING
+BTRFS_PROGS_INSTALL_STAGING = YES
 
-BTRFS_PROGS_MAKE_FLAGS = DISABLE_DOCUMENTATION=1
-
-ifeq ($(BR2_PREFER_STATIC_LIB),y)
-BTRFS_PROGS_MAKE_TARGET = static
-BTRFS_PROGS_MAKE_INSTALL_TARGET = install-static
-else
-BTRFS_PROGS_MAKE_TARGET = all
-BTRFS_PROGS_MAKE_INSTALL_TARGET = install
+# Doesn't autodetect static-only and tries to build both
+ifeq ($(BR2_STATIC_LIBS),y)
+BTRFS_PROGS_MAKE_OPTS = static
+BTRFS_PROGS_INSTALL_TARGET_OPTS = DESTDIR=$(TARGET_DIR) install-static
+BTRFS_PROGS_INSTALL_STAGING_OPTS = DESTDIR=$(STAGING_DIR) install-static
 endif
 
-define BTRFS_PROGS_BUILD_CMDS
-	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) \
-		$(BTRFS_PROGS_MAKE_FLAGS) $(BTRFS_PROGS_MAKE_TARGET)
-endef
+# convert also supports conversion from reiserfs, which needs some
+# reiserfs libraries, but we have no package for them in Buildroot, so
+# we keep things simple and only handle ext2.
+ifeq ($(BR2_PACKAGE_E2FSPROGS),y)
+BTRFS_PROGS_CONF_OPTS += --enable-convert --with-convert=ext2
+BTRFS_PROGS_DEPENDENCIES += e2fsprogs
+else
+BTRFS_PROGS_CONF_OPTS += --disable-convert
+endif
 
-define BTRFS_PROGS_INSTALL_TARGET_CMDS
-	$(MAKE) -C $(@D) prefix=/usr DESTDIR=$(TARGET_DIR) \
-		$(BTRFS_PROGS_MAKE_FLAGS) $(BTRFS_PROGS_MAKE_INSTALL_TARGET)
-endef
+ifeq ($(BR2_PACKAGE_ZSTD),y)
+BTRFS_PROGS_CONF_OPTS += --enable-zstd
+BTRFS_PROGS_DEPENDENCIES += zstd
+else
+BTRFS_PROGS_CONF_OPTS += --disable-zstd
+endif
 
-$(eval $(generic-package))
+ifeq ($(BR2_PACKAGE_HAS_UDEV),y)
+BTRFS_PROGS_CONF_OPTS += --enable-libudev
+BTRFS_PROGS_DEPENDENCIES += udev
+else
+BTRFS_PROGS_CONF_OPTS += --disable-libudev
+endif
+
+ifeq ($(BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_10),y)
+BTRFS_PROGS_CONF_OPTS += --enable-zoned
+else
+BTRFS_PROGS_CONF_OPTS += --disable-zoned
+endif
+
+HOST_BTRFS_PROGS_DEPENDENCIES = host-util-linux host-lzo host-zlib
+HOST_BTRFS_PROGS_CONF_OPTS = \
+	--disable-backtrace \
+	--disable-libudev \
+	--disable-zoned \
+	--disable-zstd \
+	--disable-python \
+	--disable-convert
+
+$(eval $(autotools-package))
+$(eval $(host-autotools-package))

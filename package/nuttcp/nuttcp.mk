@@ -5,9 +5,9 @@
 ################################################################################
 
 NUTTCP_VERSION = 6.1.2
-NUTTCP_SITE = http://www.lcp.nrl.navy.mil/nuttcp
+NUTTCP_SITE = http://nuttcp.net/nuttcp
 NUTTCP_SOURCE = nuttcp-$(NUTTCP_VERSION).tar.bz2
-NUTTCP_LICENSE = GPLv2
+NUTTCP_LICENSE = GPL-2.0
 NUTTCP_LICENSE_FILES = LICENSE
 
 define NUTTCP_BUILD_CMDS

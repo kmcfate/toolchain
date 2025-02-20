@@ -1,18 +1,15 @@
 config BR2_PACKAGE_UNRAR
 	bool "unrar"
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_4_8 # C++11
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_USE_WCHAR
 	help
-	  Extractor for packages in RAR format.
+	  RAR file uncompressor.
 
-	  http://www.rarlabs.com/
+	  http://www.rarlab.com/rar_add.htm
 
-if BR2_PACKAGE_UNRAR
-
-config BR2_PACKAGE_UNRAR_SMP
-	bool "Use thread pool for extraction"
-	depends on !BR2_PTHREADS_NONE
-	default y
-	help
-	  Uncheck this option to disable the thread pool mechanism.
-	  This can save some space when you're building for a single core system.
-
-endif # BR2_PACKAGE_UNRAR
+comment "unrar needs a toolchain w/ C++, wchar, threads, gcc >= 4.8"
+	depends on !BR2_USE_WCHAR || !BR2_INSTALL_LIBSTDCPP \
+		|| !BR2_TOOLCHAIN_GCC_AT_LEAST_4_8 \
+		|| !BR2_TOOLCHAIN_HAS_THREADS

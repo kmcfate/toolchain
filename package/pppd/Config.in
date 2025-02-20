@@ -1,7 +1,9 @@
 config BR2_PACKAGE_PPPD
 	bool "pppd"
-	depends on !BR2_PREFER_STATIC_LIB
+	depends on !BR2_STATIC_LIBS
 	depends on BR2_USE_MMU
+	select BR2_PACKAGE_OPENSSL if BR2_TOOLCHAIN_USES_GLIBC
+	select BR2_PACKAGE_LIBOPENSSL_ENABLE_DES if BR2_PACKAGE_LIBOPENSSL
 	help
 	  An implementation of the Point-to-point protocol.
 
@@ -10,20 +12,15 @@ config BR2_PACKAGE_PPPD
 if BR2_PACKAGE_PPPD
 
 config BR2_PACKAGE_PPPD_FILTER
-	select BR2_PACKAGE_LIBPCAP
 	bool "filtering"
+	select BR2_PACKAGE_LIBPCAP
 	help
 	  Packet filtering abilities for pppd. If enabled,
 	  the pppd active-filter and pass-filter options
 	  are available.
 
-config BR2_PACKAGE_PPPD_RADIUS
-	bool "radius"
-	help
-	  Install RADIUS support for pppd
-
 endif
 
 comment "pppd needs a toolchain w/ dynamic library"
-	depends on BR2_PREFER_STATIC_LIB
+	depends on BR2_STATIC_LIBS
 	depends on BR2_USE_MMU

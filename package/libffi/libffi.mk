@@ -4,30 +4,20 @@
 #
 ################################################################################
 
-LIBFFI_VERSION = 3.1
-LIBFFI_SITE    = ftp://sourceware.org/pub/libffi
+LIBFFI_VERSION = 3.4.6
+LIBFFI_SITE = \
+	https://github.com/libffi/libffi/releases/download/v$(LIBFFI_VERSION)
 LIBFFI_LICENSE = MIT
 LIBFFI_LICENSE_FILES = LICENSE
+LIBFFI_CPE_ID_VENDOR = libffi_project
 LIBFFI_INSTALL_STAGING = YES
+# We're patching configure.ac
 LIBFFI_AUTORECONF = YES
+LIBFFI_CONF_OPTS = --disable-multi-os-directory
 
-# Move the headers to the usual location, and adjust the .pc file
-# accordingly.
-define LIBFFI_MOVE_STAGING_HEADERS
-	mv $(STAGING_DIR)/usr/lib/libffi-$(LIBFFI_VERSION)/include/*.h $(STAGING_DIR)/usr/include/
-	$(SED) '/^includedir.*/d' -e '/^Cflags:.*/d' \
-		$(STAGING_DIR)/usr/lib/pkgconfig/libffi.pc
-	rm -rf $(TARGET_DIR)/usr/lib/libffi-*
-endef
-
-LIBFFI_POST_INSTALL_STAGING_HOOKS += LIBFFI_MOVE_STAGING_HEADERS
-
-# Remove headers that are not at the usual location from the target
-define LIBFFI_REMOVE_TARGET_HEADERS
-	$(RM) -rf $(TARGET_DIR)/usr/lib/libffi-$(LIBFFI_VERSION)
-endef
-
-LIBFFI_POST_INSTALL_TARGET_HOOKS += LIBFFI_REMOVE_TARGET_HEADERS
+# The static exec trampolines is enabled by default since
+# libffi 3.4.2. However it doesn't work with gobject-introspection.
+LIBFFI_CONF_OPTS += --disable-exec-static-tramp
 
 $(eval $(autotools-package))
 $(eval $(host-autotools-package))

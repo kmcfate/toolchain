@@ -1,54 +1,84 @@
-#############################################################
+################################################################################
 #
-# FluidSynth
+# fluidsynth
 #
-#############################################################
-FLUIDSYNTH_VERSION = 1.1.6
-FLUIDSYNTH_SOURCE = fluidsynth-$(FLUIDSYNTH_VERSION).tar.bz2
-FLUIDSYNTH_SITE = http://downloads.sourceforge.net/project/fluidsynth/fluidsynth-$(FLUIDSYNTH_VERSION)
+################################################################################
 
+FLUIDSYNTH_VERSION = 2.3.4
+FLUIDSYNTH_SITE = $(call github,FluidSynth,fluidsynth,v$(FLUIDSYNTH_VERSION))
+FLUIDSYNTH_LICENSE = LGPL-2.1+
+FLUIDSYNTH_LICENSE_FILES = LICENSE
+FLUIDSYNTH_CPE_ID_VENDOR = fluidsynth
 FLUIDSYNTH_INSTALL_STAGING = YES
-
-FLUIDSYNTH_CONF_OPT = -DCMAKE_BUILD_TYPE=Release -Denable-floats=on
 FLUIDSYNTH_DEPENDENCIES = libglib2
 
-ifeq ($(BR2_PACKAGE_ALSA_LIB),y)
-FLUIDSYNTH_CONF_OPT += -Denable-alsa=on
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_ALSA_LIB),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-alsa=1
 FLUIDSYNTH_DEPENDENCIES += alsa-lib
 else
-FLUIDSYNTH_CONF_OPT += -Denable-alsa=off
+FLUIDSYNTH_CONF_OPTS += -Denable-alsa=0
 endif
 
-ifeq ($(BR2_PACKAGE_DBUS),y)
-FLUIDSYNTH_CONF_OPT += -Denable-dbus=on
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_DBUS),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-dbus=1
 FLUIDSYNTH_DEPENDENCIES += dbus
 else
-FLUIDSYNTH_CONF_OPT += -Denable-dbus=off
+FLUIDSYNTH_CONF_OPTS += -Denable-dbus=0
 endif
 
-ifeq ($(BR2_PACKAGE_LIBSNDFILE),y)
-FLUIDSYNTH_CONF_OPT += -Denable-libsndfile=on
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_FLOATS),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-floats=1
+else
+FLUIDSYNTH_CONF_OPTS += -Denable-floats=0
+endif
+
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_JACK2),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-jack=1
+FLUIDSYNTH_DEPENDENCIES += jack2
+else
+FLUIDSYNTH_CONF_OPTS += -Denable-jack=0
+endif
+
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_LIBSNDFILE),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-libsndfile=1
 FLUIDSYNTH_DEPENDENCIES += libsndfile
 else
-FLUIDSYNTH_CONF_OPT += -Denable-libsndfile=off
+FLUIDSYNTH_CONF_OPTS += -Denable-libsndfile=0
 endif
 
-# Note: Disable OSS if we have ALSA.
-#       It would be better to have a dedicated OSS switch though.
-ifeq ($(BR2_PACKAGE_ALSA_LIB),y)
-FLUIDSYNTH_CONF_OPT += -DCMAKE_DISABLE_FIND_PACKAGE_OSS=TRUE
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_PORTAUDIO),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-portaudio=1
+FLUIDSYNTH_DEPENDENCIES += portaudio
+else
+FLUIDSYNTH_CONF_OPTS += -Denable-portaudio=0
 endif
 
-ifeq ($(BR2_PACKAGE_PULSEAUDIO),y)
-FLUIDSYNTH_CONF_OPT += -Denable-pulseaudio=on
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_PULSEAUDIO),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-pulseaudio=1
 FLUIDSYNTH_DEPENDENCIES += pulseaudio
 else
-FLUIDSYNTH_CONF_OPT += -Denable-pulseaudio=off
+FLUIDSYNTH_CONF_OPTS += -Denable-pulseaudio=0
 endif
 
-# Note: readline is disabled because it is licensed under GPL, while FluidSynth
-#       itself is licensed under LGPL; by disabling the readline functionality
-#       a wider range of programs can link with FluidSynth.
-FLUIDSYNTH_CONF_OPT += -Denable-readline=off
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_READLINE),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-readline=1
+FLUIDSYNTH_DEPENDENCIES += readline
+else
+FLUIDSYNTH_CONF_OPTS += -Denable-readline=0
+endif
+
+ifeq ($(BR2_PACKAGE_FLUIDSYNTH_SDL2),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-sdl2=1
+FLUIDSYNTH_DEPENDENCIES += sdl2
+else
+FLUIDSYNTH_CONF_OPTS += -Denable-sdl2=0
+endif
+
+ifeq ($(BR2_PACKAGE_SYSTEMD),y)
+FLUIDSYNTH_CONF_OPTS += -Denable-systemd=1
+FLUIDSYNTH_DEPENDENCIES += systemd
+else
+FLUIDSYNTH_CONF_OPTS += -Denable-systemd=0
+endif
 
 $(eval $(cmake-package))

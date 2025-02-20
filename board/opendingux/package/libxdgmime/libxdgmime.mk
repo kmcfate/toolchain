@@ -1,10 +1,9 @@
-################################################################################
+#############################################################
 #
 # libxdgmime
 #
-################################################################################
-
-LIBXDGMIME_VERSION = master
+#############################################################
+LIBXDGMIME_VERSION = db79e7c
 LIBXDGMIME_SITE = $(call github,pcercuei,libxdgmime,$(LIBXDGMIME_VERSION))
 LIBXDGMIME_DEPENDENCIES = shared-mime-info
 LIBXDGMIME_INSTALL_STAGING = YES

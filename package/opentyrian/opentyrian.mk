@@ -4,10 +4,9 @@
 #
 ################################################################################
 
-OPENTYRIAN_VERSION = 2.1.20130907
-OPENTYRIAN_SITE = http://www.camanis.net/opentyrian/releases
-OPENTYRIAN_SOURCE = opentyrian-$(OPENTYRIAN_VERSION)-src.tar.gz
-OPENTYRIAN_LICENSE = GPLv2+
+OPENTYRIAN_VERSION = cf5dbeb69eebd9ef9afc4473088d9469b79589eb
+OPENTYRIAN_SITE = $(call github,opentyrian,opentyrian,$(OPENTYRIAN_VERSION))
+OPENTYRIAN_LICENSE = GPL-2.0+
 OPENTYRIAN_LICENSE_FILES = COPYING
 
 OPENTYRIAN_DEPENDENCIES = sdl
@@ -20,11 +19,11 @@ OPENTYRIAN_NETWORK = false
 endif
 
 define OPENTYRIAN_BUILD_CMDS
-        $(MAKE) PLATFORM=UNIX \
+	$(TARGET_MAKE_ENV) $(MAKE) PLATFORM=UNIX \
 		CC="$(TARGET_CC)" \
 		STRIP="/bin/true" \
 		SDL_CONFIG="$(STAGING_DIR)/usr/bin/sdl-config" \
-		LDFLAGS="-lm" \
+		LDFLAGS="$(TARGET_LDFLAGS) -lm" \
 		WITH_NETWORK="$(OPENTYRIAN_NETWORK)" \
 		-C $(@D) release
 endef

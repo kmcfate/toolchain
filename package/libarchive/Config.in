@@ -8,7 +8,7 @@ config BR2_PACKAGE_LIBARCHIVE
 	  Libarchive is a reusable C library for reading and writing a
 	  variety of streaming archive formats.
 
-	  http://www.libarchive.org/
+	  https://www.libarchive.org/
 
 if BR2_PACKAGE_LIBARCHIVE
 
@@ -23,5 +23,11 @@ config BR2_PACKAGE_LIBARCHIVE_BSDCPIO
 	help
 	  The 'bsdcpio' program is a different interface to
 	  essentially the same functionality as 'bsdtar'.
+
+config BR2_PACKAGE_LIBARCHIVE_BSDCAT
+	bool "bsdcat"
+	help
+	  The 'bsdcat' program is a simple replacement tool
+	  for zcat, bzcat, xzcat, and such.
 
 endif

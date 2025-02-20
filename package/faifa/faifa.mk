@@ -4,14 +4,14 @@
 #
 ################################################################################
 
-FAIFA_VERSION = v0.1
-FAIFA_SITE = $(call github,ffainelli,faifa,$(FAIFA_VERSION))
+FAIFA_VERSION = 0.1
+FAIFA_SITE = $(call github,ffainelli,faifa,v$(FAIFA_VERSION))
 FAIFA_INSTALL_STAGING = YES
 FAIFA_DEPENDENCIES = libpcap host-autoconf
-FAIFA_LICENSE = BSD-3c
+FAIFA_LICENSE = BSD-3-Clause
 FAIFA_LICENSE_FILES = COPYING
 
-FAIFA_MAKE_OPT += GIT_REV=$(FAIFA_VERSION)
+FAIFA_MAKE_OPTS += GIT_REV=$(FAIFA_VERSION)
 
 # This package uses autoconf, but not automake, so we need to call
 # their special autogen.sh script, and have custom target and staging

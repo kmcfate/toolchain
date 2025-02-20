@@ -1,18 +1,17 @@
 #!/bin/sh
 
-[ -x /usr/sbin/ntpd ] || exit 0
 [ -f /etc/ntpd.conf ] || exit 0
 
 case "$1" in
 	start)
-		echo -n "Starting openntpd: "
-		start-stop-daemon -S -x /usr/sbin/ntpd
-		[ $? == 0 ] && echo "OK" || echo "FAIL"
+		printf "Starting openntpd: "
+		start-stop-daemon -S -x /usr/sbin/ntpd -- -s -p /run/ntpd.pid
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
 		;;
 	stop)
-		echo -n "Stopping openntpd: "
-		start-stop-daemon -K -x /usr/sbin/ntpd
-		[ $? == 0 ] && echo "OK" || echo "FAIL"
+		printf "Stopping openntpd: "
+		start-stop-daemon -K -q -p /run/ntpd.pid
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
 		;;
 	restart)
 		"$0" stop

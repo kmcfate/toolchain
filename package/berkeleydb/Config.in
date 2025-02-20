@@ -1,8 +1,8 @@
 config BR2_PACKAGE_BERKELEYDB
 	bool "berkeleydb"
 	help
-	  The Berkeley database.  A very common library for database
-	  applications.
+	  The Berkeley database. A very common library for
+	  database applications.
 
 	  http://www.sleepycat.com/products/db.shtml
 
@@ -13,9 +13,15 @@ config BR2_PACKAGE_BERKELEYDB_COMPAT185
 	help
 	  Build and install DB 1.85 compatibility API.
 
+config BR2_PACKAGE_BERKELEYDB_DBM
+	bool "historic dbm interface"
+	help
+	  Enable the historic dbm interface.
+
 config BR2_PACKAGE_BERKELEYDB_TOOLS
 	bool "install tools"
 	help
-	  Install berkeleydb tools, mostly useful for debugging purposes.
+	  Install berkeleydb tools, mostly useful for debugging
+	  purposes.
 
 endif

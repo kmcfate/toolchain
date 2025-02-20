@@ -4,44 +4,44 @@
 #
 ################################################################################
 
-XDRIVER_XF86_VIDEO_INTEL_VERSION = 2.99.914
-XDRIVER_XF86_VIDEO_INTEL_SOURCE = xf86-video-intel-$(XDRIVER_XF86_VIDEO_INTEL_VERSION).tar.bz2
-XDRIVER_XF86_VIDEO_INTEL_SITE = http://xorg.freedesktop.org/releases/individual/driver
+XDRIVER_XF86_VIDEO_INTEL_VERSION = 31486f40f8e8f8923ca0799aea84b58799754564
+XDRIVER_XF86_VIDEO_INTEL_SITE = git://anongit.freedesktop.org/xorg/driver/xf86-video-intel
 XDRIVER_XF86_VIDEO_INTEL_LICENSE = MIT
 XDRIVER_XF86_VIDEO_INTEL_LICENSE_FILES = COPYING
+XDRIVER_XF86_VIDEO_INTEL_AUTORECONF = YES
 
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT = \
+# -D_GNU_SOURCE fixes a getline-related compile error in src/sna/kgem.c
+# We force -O2 regardless of the optimization level chosen by the user,
+# as compiling this package is known to be broken with -Os.
+XDRIVER_XF86_VIDEO_INTEL_CONF_ENV = \
+	CFLAGS="$(TARGET_CFLAGS) -D_GNU_SOURCE -O2"
+
+XDRIVER_XF86_VIDEO_INTEL_CONF_OPTS = \
 	--disable-xvmc \
 	--enable-sna \
-	--disable-glamor \
 	--disable-xaa \
 	--disable-dga \
+	--disable-tools \
 	--disable-async-swap
 
 XDRIVER_XF86_VIDEO_INTEL_DEPENDENCIES = \
 	libdrm \
+	libpciaccess \
 	xlib_libXrandr \
-	xlib_libpciaccess \
-	xproto_fontsproto \
-	xproto_xproto \
+	xorgproto \
 	xserver_xorg-server
 
-# X.org server support for DRI depends on a Mesa3D DRI driver
-ifeq ($(BR2_PACKAGE_MESA3D_DRI_DRIVER),y)
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT += --enable-dri --enable-dri1
-# quote from configure.ac: "UXA doesn't build without DRI2 headers"
-ifeq ($(BR2_PACKAGE_XPROTO_DRI2PROTO),y)
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT += --enable-dri2 --enable-uxa
+# DRI support is provided by xserver_xorg-server if libgl is enabled
+ifeq ($(BR2_PACKAGE_HAS_LIBGL),y)
+XDRIVER_XF86_VIDEO_INTEL_CONF_OPTS += \
+	--enable-dri2 \
+	--enable-dri3 \
+	--enable-uxa
 else
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT += --disable-dri2 --disable-uxa
-endif
-ifeq ($(BR2_PACKAGE_XPROTO_DRI3PROTO),y)
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT += --enable-dri3
-else
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT += --disable-dri3
-endif
-else
-XDRIVER_XF86_VIDEO_INTEL_CONF_OPT += --disable-dri
+XDRIVER_XF86_VIDEO_INTEL_CONF_OPTS += \
+	--disable-dri2 \
+	--disable-dri3 \
+	--disable-uxa
 endif
 
 $(eval $(autotools-package))

@@ -1,146 +1,272 @@
 ################################################################################
 #
-# mesa3d 10.2.5>>11.0.9
+# mesa3d
 #
 ################################################################################
 
-MESA3D_VERSION = 19.0.1
-MESA3D_SOURCE = mesa-$(MESA3D_VERSION).tar.gz
-MESA3D_SITE = https://archive.mesa3d.org/
+# When updating the version, please also update mesa3d-headers
+MESA3D_VERSION = 23.2.1
+MESA3D_SOURCE = mesa-$(MESA3D_VERSION).tar.xz
+MESA3D_SITE = https://archive.mesa3d.org
 MESA3D_LICENSE = MIT, SGI, Khronos
-MESA3D_LICENSE_FILES = docs/license.html
-MESA3D_AUTORECONF = YES
-
-define MESA3D_RUN_AUTOGEN
-	cd $(@D) && PATH=$(BR_PATH) ./autogen.sh
-endef
-MESA3D_CONFIGURE_HOOKS += MESA3D_RUN_AUTOGEN
+MESA3D_LICENSE_FILES = docs/license.rst
+MESA3D_CPE_ID_VENDOR = mesa3d
+MESA3D_CPE_ID_PRODUCT = mesa
 
 MESA3D_INSTALL_STAGING = YES
-
-#for rogue
-MESA3D_CONF_OPT = \
-	--enable-autotools \
-	--disable-dri3 \
-	--disable-driglx-direct \
-	--disable-xlib-lease \
-	--with-platforms=drm
 
 MESA3D_PROVIDES =
 
 MESA3D_DEPENDENCIES = \
-	expat \
-	host-meson \
-	host-ninja \
 	host-bison \
 	host-flex \
-	host-gettext \
-	host-libxml2 \
-	host-python3-mako \
-	host-xutil_makedepend \
-	libdrm
+	host-python-mako \
+	expat \
+	libdrm \
+	zlib
 
-ifeq ($(BR2_PACKAGE_XORG7),y)
-MESA3D_DEPENDENCIES += \
-	xproto_xf86driproto \
-	xproto_dri2proto \
-	xproto_glproto \
-	xlib_libX11 \
-	xlib_libXext \
-	xlib_libXdamage \
-	xlib_libXfixes \
-	libxcb
-MESA3D_CONF_OPT += --enable-glx
-# quote from mesa3d configure "Building xa requires at least one non swrast gallium driver."
-ifneq ($(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_NOUVEAU)$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_SVGA),)
-MESA3D_CONF_OPT += --enable-xa
-else
-MESA3D_CONF_OPT += --disable-xa
-endif
-else
-MESA3D_CONF_OPT += \
-	--disable-glx \
-	--disable-xa
+MESA3D_CONF_OPTS = \
+	-Dgallium-omx=disabled \
+	-Dpower8=disabled
+
+# Codesourcery ARM 2014.05 fail to link libmesa_dri_drivers.so with --as-needed linker
+# flag due to a linker bug between binutils 2.24 and 2.25 (2.24.51.20140217).
+ifeq ($(BR2_TOOLCHAIN_EXTERNAL_CODESOURCERY_ARM),y)
+MESA3D_CONF_OPTS += -Db_asneeded=false
 endif
 
-ifeq ($(BR2_PREFER_STATIC_LIB),)
-# fix for "configure: error: Cannot use static libraries for DRI drivers"
-MESA3D_CONF_OPT += --disable-static
+ifeq ($(BR2_PACKAGE_MESA3D_DRI3),y)
+MESA3D_CONF_OPTS += -Ddri3=enabled
+ifeq ($(BR2_PACKAGE_XLIB_LIBXSHMFENCE),y)
+MESA3D_DEPENDENCIES += xlib_libxshmfence
+endif
+else
+MESA3D_CONF_OPTS += -Ddri3=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_MESA3D_LLVM),y)
+MESA3D_DEPENDENCIES += host-llvm llvm
+MESA3D_MESON_EXTRA_BINARIES += llvm-config='$(STAGING_DIR)/usr/bin/llvm-config'
+MESA3D_CONF_OPTS += -Dllvm=enabled
+ifeq ($(BR2_PACKAGE_LLVM_RTTI),y)
+MESA3D_CONF_OPTS += -Dcpp_rtti=true
+else
+MESA3D_CONF_OPTS += -Dcpp_rtti=false
+endif
+else
+# Avoid automatic search of llvm-config
+MESA3D_CONF_OPTS += -Dllvm=disabled
+endif
+
+# Disable opencl-icd: OpenCL lib will be named libOpenCL instead of
+# libMesaOpenCL and CL headers are installed
+ifeq ($(BR2_PACKAGE_MESA3D_OPENCL),y)
+MESA3D_PROVIDES += libopencl
+MESA3D_DEPENDENCIES += clang libclc
+MESA3D_CONF_OPTS += -Dgallium-opencl=standalone
+else
+MESA3D_CONF_OPTS += -Dgallium-opencl=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_MESA3D_NEEDS_ELFUTILS),y)
+MESA3D_DEPENDENCIES += elfutils
+endif
+
+ifeq ($(BR2_PACKAGE_MESA3D_OPENGL_GLX),y)
+# Disable-mangling not yet supported by meson build system.
+# glx:
+#  dri          : dri based GLX requires at least one DRI driver || dri based GLX requires shared-glapi
+#  xlib         : xlib conflicts with any dri driver
+# Always enable glx-direct; without it, many GLX applications don't work.
+MESA3D_CONF_OPTS += \
+	-Dglx=dri \
+	-Dglx-direct=true
+ifeq ($(BR2_PACKAGE_MESA3D_NEEDS_XA),y)
+MESA3D_CONF_OPTS += -Dgallium-xa=enabled
+else
+MESA3D_CONF_OPTS += -Dgallium-xa=disabled
+endif
+else
+MESA3D_CONF_OPTS += \
+	-Dglx=disabled \
+	-Dgallium-xa=disabled
+endif
+
+ifeq ($(BR2_ARM_CPU_HAS_NEON),y)
+MESA3D_CONF_OPTS += -Dgallium-vc4-neon=auto
+else
+MESA3D_CONF_OPTS += -Dgallium-vc4-neon=disabled
 endif
 
 # Drivers
 
 #Gallium Drivers
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_CROCUS)   += crocus
 MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_ETNAVIV)  += etnaviv
-MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_KMSRO) += kmsro
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_FREEDRENO) += freedreno
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_I915)     += i915
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_IRIS)     += iris
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_LIMA)     += lima
 MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_NOUVEAU)  += nouveau
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_PANFROST) += panfrost
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_R300)     += r300
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_R600)     += r600
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_RADEONSI) += radeonsi
 MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_SVGA)     += svga
 MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_SWRAST)   += swrast
-# DRI Drivers
-MESA3D_DRI_DRIVERS-$(BR2_PACKAGE_MESA3D_DRI_DRIVER_SWRAST) += swrast
-MESA3D_DRI_DRIVERS-$(BR2_PACKAGE_MESA3D_DRI_DRIVER_KMSRO) += kmsro
-MESA3D_DRI_DRIVERS-$(BR2_PACKAGE_MESA3D_DRI_DRIVER_I965)   += i965
-MESA3D_DRI_DRIVERS-$(BR2_PACKAGE_MESA3D_DRI_DRIVER_RADEON) += radeon
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_TEGRA)    += tegra
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_V3D)      += v3d
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_VC4)      += vc4
+MESA3D_GALLIUM_DRIVERS-$(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_VIRGL)    += virgl
+# Vulkan Drivers
+MESA3D_VULKAN_DRIVERS-$(BR2_PACKAGE_MESA3D_VULKAN_DRIVER_BROADCOM) += broadcom
+MESA3D_VULKAN_DRIVERS-$(BR2_PACKAGE_MESA3D_VULKAN_DRIVER_INTEL)   += intel
+MESA3D_VULKAN_DRIVERS-$(BR2_PACKAGE_MESA3D_VULKAN_DRIVER_SWRAST) += swrast
 
-ifeq ($(MESA3D_GALLIUM_DRIVERS-y),)
-MESA3D_CONF_OPT += \
-	--without-gallium-drivers
+ifeq ($(BR2_PACKAGE_MESA3D_GALLIUM_DRIVER),)
+MESA3D_CONF_OPTS += \
+	-Dgallium-drivers= \
+	-Dgallium-extra-hud=false
 else
-MESA3D_CONF_OPT += \
-	--enable-shared-glapi \
-	--with-gallium-drivers=$(subst $(space),$(comma),$(MESA3D_GALLIUM_DRIVERS-y))
+MESA3D_CONF_OPTS += \
+	-Dshared-glapi=enabled \
+	-Dgallium-drivers=$(subst $(space),$(comma),$(MESA3D_GALLIUM_DRIVERS-y)) \
+	-Dgallium-extra-hud=true
 endif
 
-ifeq ($(MESA3D_DRI_DRIVERS-y),)
-MESA3D_CONF_OPT += \
-	--without-dri-drivers
+ifeq ($(BR2_PACKAGE_MESA3D_VULKAN_DRIVER),)
+MESA3D_CONF_OPTS += \
+	-Dvulkan-drivers=
 else
-ifeq ($(BR2_PACKAGE_XPROTO_DRI3PROTO),y)
-MESA3D_DEPENDENCIES += xlib_libxshmfence xproto_dri3proto xproto_presentproto
-MESA3D_CONF_OPT += --enable-dri3
-else
-MESA3D_CONF_OPT += --disable-dri3
-endif
-MESA3D_PROVIDES += libgl
-MESA3D_CONF_OPT += \
-	--enable-dri \
-	--enable-shared-glapi \
-	--with-dri-drivers=$(subst $(space),$(comma),$(MESA3D_DRI_DRIVERS-y))
+MESA3D_DEPENDENCIES += host-python-glslang
+MESA3D_CONF_OPTS += \
+	-Dvulkan-drivers=$(subst $(space),$(comma),$(MESA3D_VULKAN_DRIVERS-y))
 endif
 
 # APIs
 
+ifeq ($(BR2_PACKAGE_MESA3D_OSMESA_GALLIUM),y)
+MESA3D_CONF_OPTS += -Dosmesa=true
+else
+MESA3D_CONF_OPTS += -Dosmesa=false
+endif
+
 # Always enable OpenGL:
-#   - it is needed for GLES (mesa3d's ./configure is a bit weird)
-#   - but if no DRI driver is enabled, then libgl is not built
-MESA3D_CONF_OPT += --enable-opengl
+#   - Building OpenGL ES without OpenGL is not supported, so always keep opengl enabled.
+MESA3D_CONF_OPTS += -Dopengl=true
+
+# libva and mesa3d have a circular dependency
+# we do not need libva support in mesa3d, therefore disable this option
+MESA3D_CONF_OPTS += -Dgallium-va=disabled
+
+# libGL is only provided for a full xorg stack, without libglvnd
+ifeq ($(BR2_PACKAGE_MESA3D_OPENGL_GLX),y)
+MESA3D_PROVIDES += $(if $(BR2_PACKAGE_LIBGLVND),,libgl)
+endif
+
+ifneq ($(BR2_PACKAGE_MESA3D_INSTALL_GL_HEADERS),y)
+define MESA3D_REMOVE_OPENGL_HEADERS
+	rm -rf $(STAGING_DIR)/usr/include/GL/
+endef
+
+MESA3D_POST_INSTALL_STAGING_HOOKS += MESA3D_REMOVE_OPENGL_HEADERS
+endif
+
+ifeq ($(BR2_PACKAGE_MESA3D_NEEDS_X11),y)
+MESA3D_DEPENDENCIES += \
+	xlib_libX11 \
+	xlib_libXext \
+	xlib_libXdamage \
+	xlib_libXfixes \
+	xlib_libXrandr \
+	xlib_libXxf86vm \
+	xorgproto \
+	libxcb
+MESA3D_PLATFORMS += x11
+endif
+ifeq ($(BR2_PACKAGE_WAYLAND),y)
+MESA3D_DEPENDENCIES += wayland wayland-protocols
+MESA3D_PLATFORMS += wayland
+endif
+
+MESA3D_CONF_OPTS += \
+	-Dplatforms=$(subst $(space),$(comma),$(MESA3D_PLATFORMS))
+
+ifeq ($(BR2_PACKAGE_MESA3D_GBM),y)
+MESA3D_CONF_OPTS += \
+	-Dgbm=enabled
+else
+MESA3D_CONF_OPTS += \
+	-Dgbm=disabled
+endif
 
 ifeq ($(BR2_PACKAGE_MESA3D_OPENGL_EGL),y)
-MESA3D_PROVIDES += libegl
-# egl depends on gbm, gbm depends on udev
-MESA3D_DEPENDENCIES += udev
-MESA3D_EGL_PLATFORMS = drm
-ifeq ($(BR2_PACKAGE_WAYLAND),y)
-MESA3D_DEPENDENCIES += wayland
-MESA3D_EGL_PLATFORMS += wayland
-endif
-ifeq ($(BR2_PACKAGE_XORG7),y)
-MESA3D_EGL_PLATFORMS += x11
-endif
-MESA3D_CONF_OPT += \
-	--enable-gbm \
-	--enable-egl \
-	--with-platforms=$(subst $(space),$(comma),$(MESA3D_EGL_PLATFORMS))
+MESA3D_PROVIDES += $(if $(BR2_PACKAGE_LIBGLVND),,libegl)
+MESA3D_CONF_OPTS += \
+	-Degl=enabled
 else
-MESA3D_CONF_OPT += \
-	--disable-egl
+MESA3D_CONF_OPTS += \
+	-Degl=disabled
 endif
 
 ifeq ($(BR2_PACKAGE_MESA3D_OPENGL_ES),y)
-MESA3D_PROVIDES += libgles
-MESA3D_CONF_OPT += --enable-gles1 --enable-gles2
+MESA3D_PROVIDES += $(if $(BR2_PACKAGE_LIBGLVND),,libgles)
+MESA3D_CONF_OPTS += -Dgles1=enabled -Dgles2=enabled
 else
-MESA3D_CONF_OPT += --disable-gles1 --disable-gles2
+MESA3D_CONF_OPTS += -Dgles1=disabled -Dgles2=disabled
 endif
 
-$(eval $(autotools-package))
+ifeq ($(BR2_PACKAGE_VALGRIND),y)
+MESA3D_CONF_OPTS += -Dvalgrind=enabled
+MESA3D_DEPENDENCIES += valgrind
+else
+MESA3D_CONF_OPTS += -Dvalgrind=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_LIBUNWIND),y)
+MESA3D_CONF_OPTS += -Dlibunwind=enabled
+MESA3D_DEPENDENCIES += libunwind
+else
+MESA3D_CONF_OPTS += -Dlibunwind=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_MESA3D_VDPAU),y)
+MESA3D_DEPENDENCIES += libvdpau
+MESA3D_CONF_OPTS += -Dgallium-vdpau=enabled
+else
+MESA3D_CONF_OPTS += -Dgallium-vdpau=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_LM_SENSORS),y)
+MESA3D_CONF_OPTS += -Dlmsensors=enabled
+MESA3D_DEPENDENCIES += lm-sensors
+else
+MESA3D_CONF_OPTS += -Dlmsensors=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_ZSTD),y)
+MESA3D_CONF_OPTS += -Dzstd=enabled
+MESA3D_DEPENDENCIES += zstd
+else
+MESA3D_CONF_OPTS += -Dzstd=disabled
+endif
+
+MESA3D_CFLAGS = $(TARGET_CFLAGS)
+
+# m68k needs 32-bit offsets in switch tables to build
+ifeq ($(BR2_m68k),y)
+MESA3D_CFLAGS += -mlong-jump-table-offsets
+endif
+
+ifeq ($(BR2_PACKAGE_LIBGLVND),y)
+ifneq ($(BR2_PACKAGE_MESA3D_OPENGL_GLX)$(BR2_PACKAGE_MESA3D_OPENGL_EGL),)
+MESA3D_DEPENDENCIES += libglvnd
+MESA3D_CONF_OPTS += -Dglvnd=true
+else
+MESA3D_CONF_OPTS += -Dglvnd=false
+endif
+else
+MESA3D_CONF_OPTS += -Dglvnd=false
+endif
+
+$(eval $(meson-package))

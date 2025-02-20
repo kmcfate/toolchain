@@ -4,7 +4,8 @@
 #
 ################################################################################
 
-LPEG_VERSION = 0.12-1
+LPEG_VERSION = 1.0.2-1
 LPEG_LICENSE = MIT
+LPEG_LICENSE_FILES = $(LPEG_SUBDIR)/lpeg.html
 
 $(eval $(luarocks-package))

@@ -4,12 +4,14 @@
 #
 ################################################################################
 
-GSL_VERSION = 1.16
+GSL_VERSION = 2.7.1
 GSL_SITE = $(BR2_GNU_MIRROR)/gsl
 GSL_INSTALL_STAGING = YES
-GSL_LICENSE = GPLv3
+GSL_LICENSE = GPL-3.0
 GSL_LICENSE_FILES = COPYING
 GSL_CONFIG_SCRIPTS = gsl-config
+# We're patching configure.ac
+GSL_AUTORECONF = YES
 
 # uClibc pretends to have fenv support as it installs <fenv.h>, but in
 # practice, it only implements it for i386. Problem reported upstream
@@ -19,8 +21,8 @@ GSL_CONFIG_SCRIPTS = gsl-config
 ifeq ($(BR2_TOOLCHAIN_USES_UCLIBC),y)
 ifneq ($(BR2_i386),y)
 GSL_CONF_ENV = \
-       ac_cv_have_decl_feenableexcept=no \
-       ac_cv_have_decl_fesettrapenable=no
+	ac_cv_have_decl_feenableexcept=no \
+	ac_cv_have_decl_fesettrapenable=no
 endif
 endif
 

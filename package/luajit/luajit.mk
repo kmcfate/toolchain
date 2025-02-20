@@ -4,24 +4,18 @@
 #
 ################################################################################
 
-LUAJIT_VERSION = 2.0.3
-LUAJIT_SOURCE  = LuaJIT-$(LUAJIT_VERSION).tar.gz
-LUAJIT_SITE    = http://luajit.org/download
+LUAJIT_VERSION = 41fb94defa8f830ce69a8122b03f6ac3216d392a
+LUAJIT_SITE = $(call github,LuaJIT,LuaJIT,$(LUAJIT_VERSION))
 LUAJIT_LICENSE = MIT
 LUAJIT_LICENSE_FILES = COPYRIGHT
+LUAJIT_CPE_ID_VENDOR = luajit
 
 LUAJIT_INSTALL_STAGING = YES
 
 LUAJIT_PROVIDES = luainterpreter
 
-ifneq ($(BR2_LARGEFILE),y)
-LUAJIT_NO_LARGEFILE = TARGET_LFSFLAGS=
-endif
-
-ifeq ($(BR2_PREFER_STATIC_LIB),y)
-LUAJIT_BUILDMODE = static
-else
-LUAJIT_BUILDMODE = dynamic
+ifeq ($(BR2_PACKAGE_LUAJIT_COMPAT52),y)
+LUAJIT_XCFLAGS += -DLUAJIT_ENABLE_LUA52COMPAT
 endif
 
 # The luajit build procedure requires the host compiler to have the
@@ -32,15 +26,26 @@ endif
 # bitness is used. Of course, this assumes that the 32 bits multilib
 # libraries are installed.
 ifeq ($(BR2_ARCH_IS_64),y)
-LUAJIT_HOST_CC=$(HOSTCC)
+LUAJIT_HOST_CC = $(HOSTCC)
+# There is no LUAJIT_ENABLE_GC64 option.
 else
-LUAJIT_HOST_CC=$(HOSTCC) -m32
+LUAJIT_HOST_CC = $(HOSTCC) -m32
+LUAJIT_XCFLAGS += -DLUAJIT_DISABLE_GC64
 endif
+
+# emulation of git archive with .gitattributes & export-subst
+# Timestamp of the $(LUAJIT_VERSION) commit, obtained in the LuaJit
+# repo, with:   git show -s --format=%ct $(LUAJIT_VERSION)
+define LUAJIT_GEN_RELVER_FILE
+	echo 1693350652 >$(@D)/.relver
+endef
+LUAJIT_POST_EXTRACT_HOOKS = LUAJIT_GEN_RELVER_FILE
+HOST_LUAJIT_POST_EXTRACT_HOOKS = LUAJIT_GEN_RELVER_FILE
 
 # We unfortunately can't use TARGET_CONFIGURE_OPTS, because the luajit
 # build system uses non conventional variable names.
 define LUAJIT_BUILD_CMDS
-	$(MAKE) PREFIX="/usr" \
+	$(TARGET_MAKE_ENV) $(MAKE) PREFIX="/usr" \
 		STATIC_CC="$(TARGET_CC)" \
 		DYNAMIC_CC="$(TARGET_CC) -fPIC" \
 		TARGET_LD="$(TARGET_CC)" \
@@ -51,25 +56,34 @@ define LUAJIT_BUILD_CMDS
 		HOST_CC="$(LUAJIT_HOST_CC)" \
 		HOST_CFLAGS="$(HOST_CFLAGS)" \
 		HOST_LDFLAGS="$(HOST_LDFLAGS)" \
-		$(LUAJIT_NO_LARGEFILE) \
-		BUILDMODE=$(LUAJIT_BUILDMODE) \
+		BUILDMODE=dynamic \
+		XCFLAGS="$(LUAJIT_XCFLAGS)" \
 		-C $(@D) amalg
 endef
 
 define LUAJIT_INSTALL_STAGING_CMDS
-	$(MAKE) PREFIX="/usr" DESTDIR="$(STAGING_DIR)" LDCONFIG=true -C $(@D) install
+	$(TARGET_MAKE_ENV) $(MAKE) PREFIX="/usr" DESTDIR="$(STAGING_DIR)" LDCONFIG=true -C $(@D) install
 endef
 
 define LUAJIT_INSTALL_TARGET_CMDS
-	$(MAKE) PREFIX="/usr" DESTDIR="$(TARGET_DIR)" LDCONFIG=true -C $(@D) install
+	$(TARGET_MAKE_ENV) $(MAKE) PREFIX="/usr" DESTDIR="$(TARGET_DIR)" LDCONFIG=true -C $(@D) install
 endef
 
+define LUAJIT_INSTALL_SYMLINK
+	ln -fs luajit $(TARGET_DIR)/usr/bin/lua
+endef
+LUAJIT_POST_INSTALL_TARGET_HOOKS += LUAJIT_INSTALL_SYMLINK
+
+# host-efl package needs host-luajit to be linked dynamically.
 define HOST_LUAJIT_BUILD_CMDS
-	$(MAKE) PREFIX="/usr" BUILDMODE=static -C $(@D) amalg
+	$(HOST_MAKE_ENV) $(MAKE) PREFIX="$(HOST_DIR)" BUILDMODE=dynamic \
+		TARGET_LDFLAGS="$(HOST_LDFLAGS)" \
+		XCFLAGS="$(LUAJIT_XCFLAGS)" \
+		-C $(@D) amalg
 endef
 
 define HOST_LUAJIT_INSTALL_CMDS
-	$(MAKE) PREFIX="/usr" DESTDIR="$(HOST_DIR)" -C $(@D) install
+	$(HOST_MAKE_ENV) $(MAKE) PREFIX="$(HOST_DIR)" LDCONFIG=true -C $(@D) install
 endef
 
 $(eval $(generic-package))

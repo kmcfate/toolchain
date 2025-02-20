@@ -4,27 +4,26 @@
 #
 ################################################################################
 
-CWIID_VERSION = 0.6.00
-CWIID_SOURCE = cwiid-$(CWIID_VERSION).tgz
-CWIID_SITE = http://abstrakraft.org/cwiid/downloads
-CWIID_LICENSE = GPLv2+
+CWIID_VERSION = fadf11e89b579bcc0336a0692ac15c93785f3f82
+CWIID_SITE = $(call github,abstrakraft,cwiid,$(CWIID_VERSION))
+CWIID_LICENSE = GPL-2.0+
 CWIID_LICENSE_FILES = COPYING
 
 CWIID_AUTORECONF = YES
 CWIID_INSTALL_STAGING = YES
 
-CWIID_DEPENDENCIES = host-pkgconf host-bison host-flex bluez_utils
+CWIID_DEPENDENCIES = host-pkgconf host-bison host-flex bluez5_utils
 
 # Disable python support. This disables the 2 following things:
 #   - wminput Python plugin support
 #   - cwiid Python module
-CWIID_CONF_OPT = --without-python --disable-ldconfig
+CWIID_CONF_OPTS = --without-python --disable-ldconfig
 
 ifeq ($(BR2_PACKAGE_CWIID_WMGUI),y)
 CWIID_DEPENDENCIES += libgtk2 libglib2
-CWIID_CONF_OPT += --enable-wmgui
+CWIID_CONF_OPTS += --enable-wmgui
 else
-CWIID_CONF_OPT += --disable-wmgui
+CWIID_CONF_OPTS += --disable-wmgui
 endif
 
 $(eval $(autotools-package))

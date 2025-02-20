@@ -4,13 +4,21 @@
 #
 ################################################################################
 
-MPG123_VERSION = 1.20.1
+MPG123_VERSION = 1.32.3
 MPG123_SOURCE = mpg123-$(MPG123_VERSION).tar.bz2
-MPG123_SITE = http://downloads.sourceforge.net/project/mpg123/mpg123/$(MPG123_VERSION)
-MPG123_CONF_OPT = --disable-lfs-alias
+MPG123_SITE = https://downloads.sourceforge.net/project/mpg123/mpg123/$(MPG123_VERSION)
 MPG123_INSTALL_STAGING = YES
-MPG123_LICENSE = LGPLv2.1
+MPG123_LICENSE = LGPL-2.1
 MPG123_LICENSE_FILES = COPYING
+MPG123_CPE_ID_VENDOR = mpg123
+MPG123_DEPENDENCIES = host-pkgconf
+
+# mpg123 has some assembly function that is not present in Thumb mode:
+# Error: selected processor does not support `smull r3,ip,r2,r10' in Thumb mode
+# so, we desactivate Thumb mode
+ifeq ($(BR2_ARM_INSTRUCTIONS_THUMB),y)
+MPG123_CONF_ENV += CFLAGS="$(TARGET_CFLAGS) -marm"
+endif
 
 MPG123_CPU = $(if $(BR2_SOFT_FLOAT),generic_nofpu,generic_fpu)
 
@@ -43,38 +51,41 @@ ifeq ($(BR2_x86_64),y)
 MPG123_CPU = x86-64
 endif
 
-MPG123_CONF_OPT += --with-cpu=$(MPG123_CPU)
+MPG123_CONF_OPTS += --with-cpu=$(MPG123_CPU)
 
 MPG123_AUDIO = dummy oss
 
 ifeq ($(BR2_PACKAGE_PORTAUDIO),y)
 MPG123_AUDIO += portaudio
-MPG123_CONF_OPT += --with-default-audio=portaudio
+MPG123_CONF_OPTS += --with-default-audio=portaudio
 MPG123_DEPENDENCIES += portaudio
+# configure script does NOT use pkg-config to figure out how to link
+# with portaudio, breaking static linking as portaudio uses pthreads
+MPG123_CONF_ENV += LIBS="`$(PKG_CONFIG_HOST_BINARY) --libs portaudio-2.0`"
 endif
 
 ifeq ($(BR2_PACKAGE_SDL),y)
 MPG123_AUDIO += sdl
-MPG123_CONF_OPT += --with-default-audio=sdl
+MPG123_CONF_OPTS += --with-default-audio=sdl
 MPG123_DEPENDENCIES += sdl
-endif
-
-ifeq ($(BR2_PACKAGE_SDL_COMPAT),y)
-MPG123_DEPENDENCIES += sdl_compat
 endif
 
 ifeq ($(BR2_PACKAGE_ALSA_LIB),y)
 MPG123_AUDIO += alsa
-MPG123_CONF_OPT += --with-default-audio=alsa
+MPG123_CONF_OPTS += --with-default-audio=alsa
 MPG123_DEPENDENCIES += alsa-lib
+# configure script does NOT use pkg-config to figure out how to link
+# with alsa, breaking static linking as alsa uses pthreads
+MPG123_CONF_ENV += LIBS="`$(PKG_CONFIG_HOST_BINARY) --libs alsa`"
 endif
 
-MPG123_CONF_OPT += --with-audio=$(shell echo $(MPG123_AUDIO) | tr ' ' ,)
+MPG123_CONF_OPTS += --with-audio=$(subst $(space),$(comma),$(MPG123_AUDIO))
 
-ifeq ($(BR2_PACKAGE_LIBTOOL),y)
-MPG123_DEPENDENCIES += libtool
-# .la files gets stripped , so directly load .so files rather than .la
-MPG123_CONF_OPT += --with-modules --with-module-suffix=.so
+# output modules are loaded with dlopen()
+ifeq ($(BR2_STATIC_LIBS),y)
+MPG123_CONF_OPTS += --disable-modules
+else
+MPG123_CONF_OPTS += --enable-modules
 endif
 
 $(eval $(autotools-package))

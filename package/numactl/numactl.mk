@@ -4,17 +4,14 @@
 #
 ################################################################################
 
-NUMACTL_VERSION = 2.0.9
-NUMACTL_SITE = ftp://oss.sgi.com/www/projects/libnuma/download
-NUMACTL_LICENSE = LGPLv2.1 (libnuma), GPLv2 (programs)
-NUMACTL_LICENSE_FILES = README
+NUMACTL_VERSION = 2.0.16
+NUMACTL_SITE = \
+	https://github.com/numactl/numactl/releases/download/v$(NUMACTL_VERSION)
+NUMACTL_LICENSE = LGPL-2.1 (libnuma), GPL-2.0 (programs)
+NUMACTL_LICENSE_FILES = LICENSE.GPL2 LICENSE.LGPL2.1
+NUMACTL_INSTALL_STAGING = YES
+# We're patching configure.ac
+NUMACTL_AUTORECONF = YES
+NUMACTL_CONF_ENV = CFLAGS="$(TARGET_CFLAGS) -fPIC"
 
-define NUMACTL_BUILD_CMDS
-	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D)
-endef
-
-define NUMACTL_INSTALL_TARGET_CMDS
-	$(MAKE) prefix=$(TARGET_DIR) libdir=$(TARGET_DIR)/lib -C $(@D) install
-endef
-
-$(eval $(generic-package))
+$(eval $(autotools-package))

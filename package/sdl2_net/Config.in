@@ -1,8 +1,9 @@
 config BR2_PACKAGE_SDL2_NET
-	bool "SDL2_net"
+	bool "sdl2_net"
 	depends on BR2_PACKAGE_SDL2
 	help
-	  SDL2_net is a small, low-level, cross-platform network library, that
-	  can be used with the Simple DirectMedia Layer library (SDL2).
+	  This is a small sample cross-platform networking library,
+	  with a sample chat client and server application. The chat
+	  client uses the GUIlib GUI framework library.
 
 	  http://www.libsdl.org/projects/SDL_net/

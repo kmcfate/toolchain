@@ -4,12 +4,12 @@
 #
 ################################################################################
 
-SNAPPY_VERSION = 1ff9be9b8fafc8528ca9e055646f5932aa5db9c4
+SNAPPY_VERSION = 1.1.10
 SNAPPY_SITE = $(call github,google,snappy,$(SNAPPY_VERSION))
-SNAPPY_LICENSE = BSD-3c
+SNAPPY_LICENSE = BSD-3-Clause
 SNAPPY_LICENSE_FILES = COPYING
-# from git
-SNAPPY_AUTORECONF = YES
+SNAPPY_CPE_ID_VENDOR = google
 SNAPPY_INSTALL_STAGING = YES
+SNAPPY_CONF_OPTS = -DSNAPPY_BUILD_BENCHMARKS=OFF -DSNAPPY_BUILD_TESTS=OFF
 
-$(eval $(autotools-package))
+$(eval $(cmake-package))

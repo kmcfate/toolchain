@@ -4,18 +4,20 @@
 #
 ################################################################################
 
-LIBUBOX_VERSION = bbd846ec2d72b2629758b69dc122ac0b0f2c3e4b
-LIBUBOX_SITE = git://nbd.name/luci2/libubox.git
-LIBUBOX_LICENSE = LGPLv2.1, GPLv2, BSD-3c, MIT
+LIBUBOX_VERSION = 75a3b870cace1171faf57bd55e5a9a2f1564f757
+LIBUBOX_SITE = https://git.openwrt.org/project/libubox.git
+LIBUBOX_SITE_METHOD = git
+LIBUBOX_LICENSE = ISC, BSD-3-Clause
 LIBUBOX_INSTALL_STAGING = YES
-LIBUBOX_DEPENDENCIES = host-pkgconf $(if $(BR2_PACKAGE_JSON_C),json-c)
+LIBUBOX_DEPENDENCIES = $(if $(BR2_PACKAGE_JSON_C),json-c)
 
 ifeq ($(BR2_USE_MMU)$(BR2_PACKAGE_LUA_5_1),yy)
 LIBUBOX_DEPENDENCIES += lua
-LIBUBOX_CONF_OPT += -DLUAPATH=$(STAGING_DIR)/usr/lib/lua/5.1 \
+LIBUBOX_CONF_OPTS += -DBUILD_LUA=ON \
+	-DLUAPATH=/usr/lib/lua/5.1 \
 	-DLUA_CFLAGS=-I$(STAGING_DIR)/usr/include
 else
-LIBUBOX_CONF_OPT += -DBUILD_LUA:BOOL=OFF
+LIBUBOX_CONF_OPTS += -DBUILD_LUA=OFF
 endif
 
 $(eval $(cmake-package))

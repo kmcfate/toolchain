@@ -4,32 +4,29 @@
 #
 ################################################################################
 
-NETTLE_VERSION = 2.7.1
-NETTLE_SITE = http://www.lysator.liu.se/~nisse/archive
-NETTLE_DEPENDENCIES = gmp
+NETTLE_VERSION = 3.9.1
+NETTLE_SITE = https://ftp.gnu.org/gnu/nettle
+NETTLE_DEPENDENCIES = host-m4 gmp
 NETTLE_INSTALL_STAGING = YES
-NETTLE_LICENSE = LGPLv2.1+
-NETTLE_LICENSE_FILES = COPYING.LIB
+NETTLE_LICENSE = Dual GPL-2.0+/LGPL-3.0+
+NETTLE_LICENSE_FILES = COPYING.LESSERv3 COPYINGv2
+NETTLE_CPE_ID_VENDOR = nettle_project
 # don't include openssl support for (unused) examples as it has problems
 # with static linking
-NETTLE_CONF_OPT = --disable-openssl
+NETTLE_CONF_OPTS = --disable-openssl
+
+HOST_NETTLE_DEPENDENCIES = host-m4 host-gmp
 
 # ARM assembly requires v6+ ISA
-ifeq ($(BR2_arm920t)$(BR2_arm922t)$(BR2_arm926t)$(BR2_arm10t)$(BR2_fa526)$(BR2_strongarm)$(BR2_xscale)$(BR2_iwmmxt),y)
-NETTLE_CONF_OPT += --disable-assembler
+ifeq ($(BR2_ARM_CPU_ARMV4)$(BR2_ARM_CPU_ARMV5)$(BR2_ARM_CPU_ARMV7M),y)
+NETTLE_CONF_OPTS += --disable-assembler
 endif
 
-# ARM NEON, requires binutils 2.21+
-ifeq ($(BR2_ARM_CPU_HAS_NEON)$(BR2_TOOLCHAIN_BUILDROOT)$(BR2_BINUTILS_VERSION_2_20_1),yy)
-NETTLE_CONF_OPT += --enable-arm-neon
+ifeq ($(BR2_ARM_CPU_HAS_NEON),y)
+NETTLE_CONF_OPTS += --enable-arm-neon
 else
-NETTLE_CONF_OPT += --disable-arm-neon
+NETTLE_CONF_OPTS += --disable-arm-neon
 endif
-
-define NETTLE_DITCH_DEBUGGING_CFLAGS
-	$(SED) '/CFLAGS/ s/ -ggdb3//' $(@D)/configure
-endef
-
-NETTLE_POST_EXTRACT_HOOKS += NETTLE_DITCH_DEBUGGING_CFLAGS
 
 $(eval $(autotools-package))
+$(eval $(host-autotools-package))

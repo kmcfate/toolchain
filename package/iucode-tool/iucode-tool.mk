@@ -4,20 +4,26 @@
 #
 ################################################################################
 
-IUCODE_TOOL_VERSION = v1.0.1
-IUCODE_TOOL_SITE = git://git.debian.org/users/hmh/iucode-tool.git
-ifeq ($(BR2_TOOLCHAIN_USES_UCLIBC),y)
-IUCODE_TOOL_CONF_ENV = LIBS="-largp"
-IUCODE_TOOL_DEPENDENCIES = argp-standalone
-endif
-IUCODE_TOOL_AUTORECONF = YES
-IUCODE_TOOL_LICENSE = GPLv2+
+IUCODE_TOOL_VERSION = 2.3.1
+IUCODE_TOOL_SOURCE = iucode-tool_$(IUCODE_TOOL_VERSION).tar.xz
+IUCODE_TOOL_SITE = https://gitlab.com/iucode-tool/releases/raw/master
+IUCODE_TOOL_LICENSE = GPL-2.0+
 IUCODE_TOOL_LICENSE_FILES = COPYING
+IUCODE_TOOL_CPE_ID_VENDOR = iucode-tool_project
+
+ifeq ($(BR2_PACKAGE_ARGP_STANDALONE),y)
+IUCODE_TOOL_DEPENDENCIES += argp-standalone $(TARGET_NLS_DEPENDENCIES)
+IUCODE_TOOL_CONF_ENV += LIBS=$(TARGET_NLS_LIBS)
+endif
 
 define IUCODE_TOOL_INSTALL_INIT_SYSV
-	[ -f $(TARGET_DIR)/etc/init.d/S00iucode-tool ] || \
-		$(INSTALL) -D -m 0755 package/iucode-tool/S00iucode-tool \
-			$(TARGET_DIR)/etc/init.d/S00iucode-tool
+	$(INSTALL) -D -m 0755 package/iucode-tool/S00iucode-tool \
+		$(TARGET_DIR)/etc/init.d/S00iucode-tool
+endef
+
+define IUCODE_TOOL_INSTALL_INIT_SYSTEMD
+	$(INSTALL) -D -m 644 package/iucode-tool/iucode.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/iucode.service
 endef
 
 $(eval $(autotools-package))

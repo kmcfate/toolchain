@@ -4,112 +4,89 @@
 #
 ################################################################################
 
-# Release 0.6.0 doesn't build cleanly, so use a recent
-# Git commit.
-SCONESERVER_VERSION = d58f2de88c681939554089f786e360042a30c8f8
+SCONESERVER_VERSION = 8d1935919a2013358993a8e9dfa992cbde56e503
 SCONESERVER_SITE = $(call github,sconemad,sconeserver,$(SCONESERVER_VERSION))
-SCONESERVER_LICENSE = GPLv2+
+SCONESERVER_LICENSE = GPL-2.0+
 SCONESERVER_LICENSE_FILES = COPYING
-
-SCONESERVER_AUTORECONF = YES
-SCONESERVER_DEPENDENCIES += pcre
-SCONESERVER_CONF_OPT += --with-ip --with-local
-
-# Sconeserver configure script fails to find the libxml2 headers.
-ifeq ($(BR2_PACKAGE_LIBXML2),y)
-	SCONESERVER_CONF_OPT += \
-		--with-xml2-config="$(STAGING_DIR)/usr/bin/xml2-config"
-endif
-
-ifeq ($(BR2_INET_IPV6),y)
-	SCONESERVER_CONF_OPT += --with-ip6
-else
-	SCONESERVER_CONF_OPT += --without-ip6
-endif
+SCONESERVER_DEPENDENCIES = \
+	host-pkgconf \
+	pcre \
+	zlib
+# disable image as it fails to build with ImageMagick
+# disable markdown module because its git submodule cmark
+# https://github.com/sconemad/sconeserver/tree/master/markdown
+# has no cross-compile support provided by the sconeserver build system
+SCONESERVER_CONF_OPTS += \
+	-DCMAKE_CXX_FLAGS="$(TARGET_CXXFLAGS) -std=c++11" \
+	-DWITH_IMAGE=OFF \
+	-DWITH_MARKDOWN=OFF
 
 ifeq ($(BR2_PACKAGE_OPENSSL),y)
-	SCONESERVER_DEPENDENCIES += openssl
-	SCONESERVER_CONF_OPT += --with-ssl
+SCONESERVER_DEPENDENCIES += openssl
+SCONESERVER_CONF_OPTS += -DWITH_SSL=ON
 else
-	SCONESERVER_CONF_OPT += --without-ssl
-endif
-
-ifeq ($(BR2_PACKAGE_SCONESERVER_EXAMPLES),y)
-	SCONESERVER_CONF_OPT += --with-examples
-else
-	SCONESERVER_CONF_OPT += --without-examples
-endif
-
-ifeq ($(BR2_PACKAGE_SCONESERVER_HTTP_SCONESITE),y)
-	SCONESERVER_DEPENDENCIES += libxml2
-	SCONESERVER_CONF_OPT += --with-sconesite
-else
-	SCONESERVER_CONF_OPT += --without-sconesite
-endif
-
-ifeq ($(BR2_PACKAGE_SCONESERVER_HTTP_SCONESITE_IMAGE),y)
-	SCONESERVER_DEPENDENCIES += imagemagick host-pkgconf
-	SCONESERVER_CONF_OPT += \
-		--with-sconesite-image \
-		--with-Magick++-config="$(STAGING_DIR)/usr/bin/Magick++-config"
-else
-	SCONESERVER_CONF_OPT += --without-sconesite-image
-endif
-
-ifeq ($(BR2_PACKAGE_SCONESERVER_MYSQL),y)
-	SCONESERVER_DEPENDENCIES += mysql
-	SCONESERVER_CONF_OPT += --with-mysql \
-		--with-mysql_config="$(STAGING_DIR)/usr/bin/mysql_config" \
-		LDFLAGS="$(TARGET_LDFLAGS) -L$(STAGING_DIR)/usr/lib/mysql"
-else
-	SCONESERVER_CONF_OPT += --without-mysql
+SCONESERVER_CONF_OPTS += -DWITH_SSL=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_SCONESERVER_BLUETOOTH),y)
-	SCONESERVER_DEPENDENCIES += bluez_utils
-	SCONESERVER_CONF_OPT += --with-bluetooth
+SCONESERVER_DEPENDENCIES += bluez5_utils
+SCONESERVER_CONF_OPTS += -DWITH_BLUETOOTH=ON
 else
-	SCONESERVER_CONF_OPT += --without-bluetooth
+SCONESERVER_CONF_OPTS += -DWITH_BLUETOOTH=OFF
 endif
 
-ifeq ($(BR2_PACKAGE_SCONESERVER_RSS),y)
-	SCONESERVER_DEPENDENCIES += libxml2
-	SCONESERVER_CONF_OPT += --with-rss
+ifeq ($(BR2_PACKAGE_SCONESERVER_EXAMPLES),y)
+SCONESERVER_CONF_OPTS += -DWITH_EXAMPLES=ON
 else
-	SCONESERVER_CONF_OPT += --without-rss
+SCONESERVER_CONF_OPTS += -DWITH_EXAMPLES=OFF
+endif
+
+ifeq ($(BR2_PACKAGE_SCONESERVER_HTTP_SCONESITE),y)
+SCONESERVER_DEPENDENCIES += libxml2
+SCONESERVER_CONF_OPTS += -DWITH_SCONESITE=ON
+else
+SCONESERVER_CONF_OPTS += -DWITH_SCONESITE=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_SCONESERVER_LOCATION),y)
-	SCONESERVER_DEPENDENCIES += gpsd
-	SCONESERVER_CONF_OPT += --with-location
+SCONESERVER_DEPENDENCIES += gpsd
+SCONESERVER_CONF_OPTS += -DWITH_LOCATION=ON
 else
-	SCONESERVER_CONF_OPT += --without-location
-endif
-
-ifeq ($(BR2_PACKAGE_SCONESERVER_LETTUCE),y)
-	SCONESERVER_CONF_OPT += --with-lettuce
-else
-	SCONESERVER_CONF_OPT += --without-lettuce
+SCONESERVER_CONF_OPTS += -DWITH_LOCATION=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_SCONESERVER_MATHS),y)
-	SCONESERVER_DEPENDENCIES += mpfr
-	SCONESERVER_CONF_OPT += --with-maths
+SCONESERVER_DEPENDENCIES += mpfr
+SCONESERVER_CONF_OPTS += -DWITH_MATHS=ON
 else
-	SCONESERVER_CONF_OPT += --without-maths
+SCONESERVER_CONF_OPTS += -DWITH_MATHS=OFF
+endif
+
+ifeq ($(BR2_PACKAGE_SCONESERVER_MYSQL),y)
+SCONESERVER_DEPENDENCIES += mysql
+SCONESERVER_CONF_OPTS += -DWITH_MYSQL=ON
+else
+SCONESERVER_CONF_OPTS += -DWITH_MYSQL=OFF
+endif
+
+ifeq ($(BR2_PACKAGE_SCONESERVER_RSS),y)
+SCONESERVER_DEPENDENCIES += libxml2
+SCONESERVER_CONF_OPTS += -DWITH_RSS=ON
+else
+SCONESERVER_CONF_OPTS += -DWITH_RSS=OFF
+endif
+
+ifeq ($(BR2_PACKAGE_SCONESERVER_SQLITE),y)
+SCONESERVER_DEPENDENCIES += sqlite
+SCONESERVER_CONF_OPTS += -DWITH_SQLITE=ON
+else
+SCONESERVER_CONF_OPTS += -DWITH_SQLITE=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_SCONESERVER_TESTBUILDER),y)
-	SCONESERVER_CONF_OPT += --with-testbuilder
+SCONESERVER_CONF_OPTS += -DWITH_TESTBUILDER=ON
 else
-	SCONESERVER_CONF_OPT += --without-testbuilder
+SCONESERVER_CONF_OPTS += -DWITH_TESTBUILDER=OFF
 endif
 
-ifeq ($(BR2_PACKAGE_SCONESERVER_UI),y)
-	SCONESERVER_DEPENDENCIES += xlib_libX11
-	SCONESERVER_CONF_OPT += --with-ui
-else
-	SCONESERVER_CONF_OPT += --without-ui
-endif
-
-$(eval $(autotools-package))
+$(eval $(cmake-package))

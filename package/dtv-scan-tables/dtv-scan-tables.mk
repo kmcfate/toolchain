@@ -4,17 +4,17 @@
 #
 ################################################################################
 
-DTV_SCAN_TABLES_VERSION = 1246b27f8b45f84c1824925060ad931530542f2e
-DTV_SCAN_TABLES_SITE = http://git.linuxtv.org/cgit.cgi/dtv-scan-tables.git
+DTV_SCAN_TABLES_VERSION = 57ed2982275045ea5e92ef2a40b9fa58255852e5
+DTV_SCAN_TABLES_SITE = https://git.linuxtv.org/dtv-scan-tables.git
 DTV_SCAN_TABLES_SITE_METHOD = git
 
 # This package only contains the transponders data. This is not a 'work'
 # as per traditional copyright, but just a collection of 'facts', so there's
 # probably no license to apply to these data files.
 # However, the package prominently contains the COPYING and COPYING.LIB
-# license files (respectively for the GPLv2 and the LGPLv2.1), so we use
+# license files (respectively for the GPL-2.0 and the LGPL-2.1), so we use
 # that as the licensing information.
-DTV_SCAN_TABLES_LICENSE = GPLv2 LGPLv2.1
+DTV_SCAN_TABLES_LICENSE = GPL-2.0, LGPL-2.1
 DTV_SCAN_TABLES_LICENSE_FILES = COPYING COPYING.LGPL
 
 define DTV_SCAN_TABLES_INSTALL_TARGET_CMDS

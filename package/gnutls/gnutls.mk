@@ -4,65 +4,126 @@
 #
 ################################################################################
 
-GNUTLS_VERSION_MAJOR = 3.2
-GNUTLS_VERSION = $(GNUTLS_VERSION_MAJOR).16
+# When bumping, make sure *all* --without-libfoo-prefix options are in GNUTLS_CONF_OPTS
+GNUTLS_VERSION_MAJOR = 3.8
+GNUTLS_VERSION = $(GNUTLS_VERSION_MAJOR).1
 GNUTLS_SOURCE = gnutls-$(GNUTLS_VERSION).tar.xz
-GNUTLS_SITE = ftp://ftp.gnutls.org/gcrypt/gnutls/v$(GNUTLS_VERSION_MAJOR)
-GNUTLS_LICENSE = GPLv3+ LGPLv2.1+
-GNUTLS_LICENSE_FILES = COPYING COPYING.LESSER
-GNUTLS_DEPENDENCIES = host-pkgconf nettle pcre \
-	$(if $(BR2_PACKAGE_P11_KIT),p11-kit) \
-	$(if $(BR2_PACKAGE_LIBIDN),libidn) \
-	$(if $(BR2_PACKAGE_LIBTASN1),libtasn1) \
-	$(if $(BR2_PACKAGE_ZLIB),zlib)
-GNUTLS_CONF_OPT = \
-	--with-libnettle-prefix=$(STAGING_DIR)/usr \
-	--disable-rpath \
+GNUTLS_SITE = https://www.gnupg.org/ftp/gcrypt/gnutls/v$(GNUTLS_VERSION_MAJOR)
+GNUTLS_LICENSE = LGPL-2.1+ (core library)
+GNUTLS_LICENSE_FILES = doc/COPYING.LESSER
+
+GNUTLS_DEPENDENCIES = host-pkgconf libtasn1 libunistring nettle
+GNUTLS_CPE_ID_VENDOR = gnu
+GNUTLS_CONF_OPTS = \
 	--disable-doc \
-	--disable-guile \
-	--enable-local-libopts
-GNUTLS_CONF_ENV = gl_cv_socket_ipv6=$(if $(BR2_INET_IPV6),yes,no) \
+	--disable-libdane \
+	--disable-rpath \
+	--disable-tests \
+	--without-included-unistring \
+	--without-libcrypto-prefix \
+	--without-libdl-prefix \
+	--without-libev-prefix \
+	--without-libiconv-prefix \
+	--without-libintl-prefix \
+	--without-libpthread-prefix \
+	--without-libseccomp-prefix \
+	--without-librt-prefix \
+	--without-libz-prefix \
+	--without-tpm \
+	$(if $(BR2_PACKAGE_GNUTLS_TOOLS),--enable-tools,--disable-tools) \
+	$(if $(BR2_PACKAGE_GNUTLS_ENABLE_SSL2),--enable,--disable)-ssl2-support \
+	$(if $(BR2_PACKAGE_GNUTLS_ENABLE_GOST),--enable,--disable)-gost
+GNUTLS_CONF_ENV = gl_cv_socket_ipv6=yes \
 	ac_cv_header_wchar_h=$(if $(BR2_USE_WCHAR),yes,no) \
 	gt_cv_c_wchar_t=$(if $(BR2_USE_WCHAR),yes,no) \
 	gt_cv_c_wint_t=$(if $(BR2_USE_WCHAR),yes,no) \
 	gl_cv_func_gettimeofday_clobber=no
 GNUTLS_INSTALL_STAGING = YES
 
-# libpthread and libz autodetection poison the linkpath
-GNUTLS_CONF_OPT += $(if $(BR2_TOOLCHAIN_HAS_THREADS),--with-libpthread-prefix=$(STAGING_DIR)/usr)
-GNUTLS_CONF_OPT += $(if $(BR2_PACKAGE_ZLIB),--with-libz-prefix=$(STAGING_DIR)/usr)
+HOST_GNUTLS_DEPENDENCIES = host-pkgconf host-libtasn1 host-libunistring host-nettle
+HOST_GNUTLS_CONF_OPTS = \
+	--disable-doc \
+	--disable-libdane \
+	--disable-rpath \
+	--disable-tests \
+	--without-included-unistring \
+	--without-libcrypto-prefix \
+	--without-libdl-prefix \
+	--without-libev-prefix \
+	--without-libiconv-prefix \
+	--without-libintl-prefix \
+	--without-libpthread-prefix \
+	--without-libseccomp-prefix \
+	--without-librt-prefix \
+	--without-libz-prefix \
+	--without-tpm \
+	--disable-openssl-compatibility \
+	--without-libbrotli \
+	--without-idn \
+	--without-p11-kit \
+	--without-zlib \
+	--without-libzstd
 
-# gnutls needs libregex, but pcre can be used too
-# The check isn't cross-compile friendly
-GNUTLS_CONF_ENV += libopts_cv_with_libregex=yes
-GNUTLS_CONF_OPT += --with-regex-header=pcreposix.h \
-	--with-libregex-cflags="`$(PKG_CONFIG_HOST_BINARY) libpcreposix --cflags`" \
-	--with-libregex-libs="`$(PKG_CONFIG_HOST_BINARY) libpcreposix --libs`"
-
-# Consider crywrap as part of tools because it needs WCHAR, and it's so too
-ifeq ($(BR2_PACKAGE_GNUTLS_TOOLS),)
-	GNUTLS_CONF_OPT += --disable-crywrap
+ifeq ($(BR2_PACKAGE_GNUTLS_OPENSSL),y)
+GNUTLS_LICENSE += , GPL-3.0+ (gnutls-openssl library)
+GNUTLS_LICENSE_FILES += doc/COPYING
+GNUTLS_CONF_OPTS += --enable-openssl-compatibility
+else
+GNUTLS_CONF_OPTS += --disable-openssl-compatibility
 endif
 
-# libidn support for nommu must exclude the crywrap wrapper (uses fork)
-GNUTLS_CONF_OPT += $(if $(BR2_USE_MMU),,--disable-crywrap)
+ifeq ($(BR2_PACKAGE_BROTLI),y)
+GNUTLS_CONF_OPTS += --with-libbrotli
+GNUTLS_DEPENDENCIES += brotli
+else
+GNUTLS_CONF_OPTS += --without-libbrotli
+endif
 
 ifeq ($(BR2_PACKAGE_CRYPTODEV_LINUX),y)
-	GNUTLS_CONF_OPT += --enable-cryptodev
-	GNUTLS_DEPENDENCIES += cryptodev-linux
+GNUTLS_CONF_OPTS += --enable-cryptodev
+GNUTLS_DEPENDENCIES += cryptodev-linux
 endif
 
-# Some examples in doc/examples use wchar
-define GNUTLS_DISABLE_DOCS
-	$(SED) 's/ doc / /' $(@D)/Makefile.in
-endef
+ifeq ($(BR2_PACKAGE_LIBIDN2),y)
+GNUTLS_CONF_OPTS += --with-idn
+GNUTLS_DEPENDENCIES += libidn2
+else
+GNUTLS_CONF_OPTS += --without-idn
+endif
 
-define GNUTLS_DISABLE_TOOLS
-	$(SED) 's/\$$(PROGRAMS)//' $(@D)/src/Makefile.in
-	$(SED) 's/) install-exec-am/)/' $(@D)/src/Makefile.in
-endef
+ifeq ($(BR2_PACKAGE_P11_KIT),y)
+GNUTLS_CONF_OPTS += --with-p11-kit
+GNUTLS_DEPENDENCIES += p11-kit
+else
+GNUTLS_CONF_OPTS += --without-p11-kit
+endif
 
-GNUTLS_POST_PATCH_HOOKS += GNUTLS_DISABLE_DOCS
-GNUTLS_POST_PATCH_HOOKS += $(if $(BR2_PACKAGE_GNUTLS_TOOLS),,GNUTLS_DISABLE_TOOLS)
+ifeq ($(BR2_PACKAGE_ZLIB),y)
+GNUTLS_CONF_OPTS += --with-zlib
+GNUTLS_DEPENDENCIES += zlib
+else
+GNUTLS_CONF_OPTS += --without-zlib
+endif
+
+ifeq ($(BR2_PACKAGE_ZSTD),y)
+GNUTLS_CONF_OPTS += --with-libzstd
+GNUTLS_DEPENDENCIES += zstd
+else
+GNUTLS_CONF_OPTS += --without-libzstd
+endif
+
+# Provide a default CA cert location
+ifeq ($(BR2_PACKAGE_P11_KIT),y)
+GNUTLS_CONF_OPTS += --with-default-trust-store-pkcs11=pkcs11:model=p11-kit-trust
+else ifeq ($(BR2_PACKAGE_CA_CERTIFICATES),y)
+GNUTLS_CONF_OPTS += --with-default-trust-store-file=/etc/ssl/certs/ca-certificates.crt
+endif
+
+ifeq ($(BR2_TOOLCHAIN_HAS_LIBATOMIC),y)
+GNUTLS_LIBS += -latomic
+endif
+
+GNUTLS_CONF_ENV += LIBS="$(GNUTLS_LIBS)"
 
 $(eval $(autotools-package))
+$(eval $(host-autotools-package))

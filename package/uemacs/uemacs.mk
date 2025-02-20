@@ -4,10 +4,12 @@
 #
 ################################################################################
 
-UEMACS_VERSION = 4.0.15-lt
-UEMACS_SOURCE = em-$(UEMACS_VERSION).tar.gz
-UEMACS_SITE = $(BR2_KERNEL_MIRROR)/software/editors/uemacs
+UEMACS_VERSION = 1cdcf9df88144049750116e36fe20c8c39fa2517
+UEMACS_SITE = https://git.kernel.org/pub/scm/editors/uemacs/uemacs.git
+UEMACS_SITE_METHOD = git
 UEMACS_DEPENDENCIES = ncurses
+UEMACS_LICENSE = MicroEMACS copyright notice
+UEMACS_LICENSE_FILES = README
 
 define UEMACS_BUILD_CMDS
 	$(TARGET_CONFIGURE_OPTS) $(MAKE) -C $(@D) \

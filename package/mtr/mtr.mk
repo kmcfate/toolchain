@@ -4,21 +4,35 @@
 #
 ################################################################################
 
-MTR_VERSION = 0.85
-MTR_SITE = ftp://ftp.bitwizard.nl/mtr
-MTR_CONF_OPT = --without-gtk --without-glib
-MTR_DEPENDENCIES = host-pkgconf $(if $(BR2_PACKAGE_NCURSES),ncurses)
-MTR_LICENSE = GPLv2
+MTR_VERSION = 0.95
+MTR_SITE = $(call github,traviscross,mtr,v$(MTR_VERSION))
+MTR_AUTORECONF = YES
+MTR_DEPENDENCIES = \
+	host-pkgconf \
+	$(if $(BR2_PACKAGE_LIBCAP),libcap)
+MTR_LICENSE = GPL-2.0
 MTR_LICENSE_FILES = COPYING
+MTR_SELINUX_MODULES = netutils
 
-# uClibc has res_ninit but not res_nmkquery
-ifeq ($(BR2_TOOLCHAIN_USES_UCLIBC),y)
-define MTR_DISABLE_RES_NINIT
-	$(SED) 's/#ifdef res_ninit/#if 0/' \
-		$(@D)/dns.c
-endef
+ifeq ($(BR2_PACKAGE_JANSSON),y)
+MTR_CONF_OPTS += --with-jansson
+MTR_DEPENDENCIES += jansson
+else
+MTR_CONF_OPTS += --without-jansson
 endif
 
-MTR_POST_PATCH_HOOKS += MTR_DISABLE_RES_NINIT
+ifeq ($(BR2_PACKAGE_LIBGTK3),y)
+MTR_CONF_OPTS += --with-gtk
+MTR_DEPENDENCIES += libgtk3
+else
+MTR_CONF_OPTS += --without-gtk
+endif
+
+ifeq ($(BR2_PACKAGE_NCURSES),y)
+MTR_CONF_OPTS += --with-ncurses
+MTR_DEPENDENCIES += ncurses
+else
+MTR_CONF_OPTS += --without-ncurses
+endif
 
 $(eval $(autotools-package))

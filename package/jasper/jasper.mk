@@ -4,12 +4,34 @@
 #
 ################################################################################
 
-JASPER_VERSION = 1.900.1
-JASPER_SITE = http://sources.openelec.tv/devel
-JASPER_SOURCE = jasper-$(JASPER_VERSION).tar.bz2
+JASPER_VERSION = 2.0.33
+JASPER_SITE = https://github.com/jasper-software/jasper/releases/download/version-$(JASPER_VERSION)
 JASPER_INSTALL_STAGING = YES
-JASPER_DEPENDENCIES = jpeg
-JASPER_LICENSE = MIT
+JASPER_LICENSE = JasPer-2.0
 JASPER_LICENSE_FILES = LICENSE
+JASPER_CPE_ID_VENDOR = jasper_project
+JASPER_SUPPORTS_IN_SOURCE_BUILD = NO
+JASPER_CONF_OPTS = \
+	-DJAS_ENABLE_DOC=OFF \
+	-DJAS_ENABLE_PROGRAMS=OFF
 
-$(eval $(autotools-package))
+ifeq ($(BR2_STATIC_LIBS),y)
+JASPER_CONF_OPTS += -DJAS_ENABLE_SHARED=OFF
+endif
+
+ifeq ($(BR2_PACKAGE_JPEG),y)
+JASPER_CONF_OPTS += -DJAS_ENABLE_LIBJPEG=ON
+JASPER_DEPENDENCIES += jpeg
+else
+JASPER_CONF_OPTS += -DJAS_ENABLE_LIBJPEG=OFF
+endif
+
+JASPER_CFLAGS = $(TARGET_CFLAGS)
+
+ifeq ($(BR2_TOOLCHAIN_HAS_GCC_BUG_85180),y)
+JASPER_CFLAGS += -O0
+endif
+
+JASPER_CONF_OPTS += -DCMAKE_C_FLAGS="$(JASPER_CFLAGS)"
+
+$(eval $(cmake-package))

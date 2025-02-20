@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-JSMIN_VERSION = a9b47554d5684a55301a2eb7ca8480b7ee7630d4
+JSMIN_VERSION = 1bf6ce5f74a9f8752ac7f5d115b8d7ccb31cfe1b
 JSMIN_SITE = $(call github,douglascrockford,JSMin,$(JSMIN_VERSION))
 JSMIN_LICENSE = MIT
 JSMIN_LICENSE_FILES = jsmin.c
@@ -22,7 +22,7 @@ define HOST_JSMIN_BUILD_CMDS
 endef
 
 define HOST_JSMIN_INSTALL_CMDS
-	$(INSTALL) -m 0755 -D $(@D)/jsmin $(HOST_DIR)/usr/bin/jsmin
+	$(INSTALL) -m 0755 -D $(@D)/jsmin $(HOST_DIR)/bin/jsmin
 endef
 
 $(eval $(generic-package))

@@ -4,37 +4,58 @@
 #
 ################################################################################
 
-GSTREAMER1_VERSION = 1.2.4
+GSTREAMER1_VERSION = 1.22.6
 GSTREAMER1_SOURCE = gstreamer-$(GSTREAMER1_VERSION).tar.xz
-GSTREAMER1_SITE = http://gstreamer.freedesktop.org/src/gstreamer
+GSTREAMER1_SITE = https://gstreamer.freedesktop.org/src/gstreamer
 GSTREAMER1_INSTALL_STAGING = YES
 GSTREAMER1_LICENSE_FILES = COPYING
-GSTREAMER1_LICENSE = LGPLv2+ LGPLv2.1+
+GSTREAMER1_LICENSE = LGPL-2.1+
+GSTREAMER1_CPE_ID_VENDOR = gstreamer_project
+GSTREAMER1_CPE_ID_PRODUCT = gstreamer
 
-# Checking if unaligned memory access works correctly cannot be done when cross
-# compiling. For the following architectures there is no information available
-# in the configure script.
-ifeq ($(BR2_arc)$(BR2_avr32)$(BR2_xtensa)$(BR2_microblaze),y)
-GSTREAMER1_CONF_ENV = as_cv_unaligned_access=no
+GSTREAMER1_CONF_OPTS = \
+	-Dexamples=disabled \
+	-Dtests=disabled \
+	-Dbenchmarks=disabled \
+	-Dtools=$(if $(BR2_PACKAGE_GSTREAMER1_INSTALL_TOOLS),enabled,disabled) \
+	-Dgobject-cast-checks=disabled \
+	-Dglib-asserts=disabled \
+	-Dglib-checks=disabled \
+	-Dextra-checks=disabled \
+	-Dcheck=$(if $(BR2_PACKAGE_GSTREAMER1_CHECK),enabled,disabled) \
+	-Dtracer_hooks=$(if $(BR2_PACKAGE_GSTREAMER1_TRACE),true,false) \
+	-Doption-parsing=$(if $(BR2_PACKAGE_GSTREAMER1_PARSE),true,false) \
+	-Dgst_debug=$(if $(BR2_PACKAGE_GSTREAMER1_GST_DEBUG),true,false) \
+	-Dgst_parse=true \
+	-Dregistry=$(if $(BR2_PACKAGE_GSTREAMER1_PLUGIN_REGISTRY),true,false) \
+	-Ddoc=disabled
+
+GSTREAMER1_DEPENDENCIES = \
+	host-bison \
+	host-flex \
+	host-pkgconf \
+	libglib2 \
+	$(if $(BR2_PACKAGE_LIBUNWIND),libunwind) \
+	$(if $(BR2_PACKAGE_VALGRIND),valgrind) \
+	$(TARGET_NLS_DEPENDENCIES)
+
+ifeq ($(BR2_PACKAGE_GOBJECT_INTROSPECTION),y)
+GSTREAMER1_CONF_OPTS += -Dintrospection=enabled
+GSTREAMER1_DEPENDENCIES += gobject-introspection
+else
+GSTREAMER1_CONF_OPTS += -Dintrospection=disabled
 endif
-ifeq ($(BR2_aarch64),y)
-GSTREAMER1_CONF_ENV = as_cv_unaligned_access=yes
-endif
 
-GSTREAMER1_CONF_OPT = \
-	--disable-examples \
-	--disable-tests \
-	--disable-failing-tests \
-	--disable-debug \
-	--disable-valgrind \
-	--disable-benchmarks \
-	--disable-check \
-	$(if $(BR2_PACKAGE_GSTREAMER1_TRACE),,--disable-trace) \
-	$(if $(BR2_PACKAGE_GSTREAMER1_PARSE),,--disable-parse) \
-	$(if $(BR2_PACKAGE_GSTREAMER1_GST_DEBUG),,--disable-gst-debug) \
-	$(if $(BR2_PACKAGE_GSTREAMER1_PLUGIN_REGISTRY),,--disable-registry) \
-	$(if $(BR2_PACKAGE_GSTREAMER1_INSTALL_TOOLS),,--disable-tools)
+GSTREAMER1_LDFLAGS = $(TARGET_LDFLAGS) $(TARGET_NLS_LIBS)
 
-GSTREAMER1_DEPENDENCIES = libglib2 host-pkgconf host-bison host-flex
+# By default, girdir uses datadir as its prefix of which pkg-config will not
+# append the sysroot directory. This results in a build failure with
+# gst1-plugins-base. Changing prefix to ${libdir}/../share prevents this error.
+define GSTREAMER1_FIX_GIRDIR
+	$(SED) "s%girdir=.*%girdir=\$${libdir}/../share/gir-1.0%g" \
+		$(STAGING_DIR)/usr/lib/pkgconfig/gstreamer-1.0.pc \
+		$(STAGING_DIR)/usr/lib/pkgconfig/gstreamer-base-1.0.pc
+endef
+GSTREAMER1_POST_INSTALL_STAGING_HOOKS += GSTREAMER1_FIX_GIRDIR
 
-$(eval $(autotools-package))
+$(eval $(meson-package))

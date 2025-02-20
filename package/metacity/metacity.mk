@@ -8,23 +8,28 @@
 METACITY_VERSION_MAJOR = 2.25
 METACITY_VERSION = $(METACITY_VERSION_MAJOR).1
 METACITY_SOURCE = metacity-$(METACITY_VERSION).tar.bz2
-METACITY_SITE = http://ftp.gnome.org/pub/gnome/sources/metacity/$(METACITY_VERSION_MAJOR)
-METACITY_LICENSE = GPLv2+
+METACITY_SITE = https://download.gnome.org/sources/metacity/$(METACITY_VERSION_MAJOR)
+METACITY_LICENSE = GPL-2.0+
 METACITY_LICENSE_FILES = COPYING
 
-METACITY_CONF_OPT = --x-includes=$(STAGING_DIR)/usr/include/X11 \
-		--x-libraries=$(STAGING_DIR)/usr/lib \
-		--disable-glibtest --disable-gconf \
-		--disable-dependency-tracking \
-		--disable-sm --disable-startup-notification
+METACITY_CONF_OPTS = \
+	--x-includes=$(STAGING_DIR)/usr/include/X11 \
+	--x-libraries=$(STAGING_DIR)/usr/lib \
+	--disable-glibtest \
+	--disable-gconf \
+	--disable-sm \
+	--disable-startup-notification
 
 METACITY_DEPENDENCIES = libgtk2 \
 	xlib_libX11 \
-	host-perl-xml-parser \
+	host-libxml-parser-perl \
 	xlib_libXcomposite \
 	xlib_libXfixes \
 	xlib_libXrender \
-	xlib_libXdamage
+	xlib_libXdamage \
+	$(TARGET_NLS_DEPENDENCIES)
+
+METACITY_CONF_ENV = LIBS=$(TARGET_NLS_LIBS)
 
 ifeq ($(BR2_PACKAGE_XLIB_LIBXCURSOR),y)
 METACITY_DEPENDENCIES += xlib_libXcursor

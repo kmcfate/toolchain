@@ -4,33 +4,44 @@
 #
 ################################################################################
 
-HTOP_VERSION = 3.0.4
-HTOP_SOURCE = $(HTOP_VERSION).tar.gz
-HTOP_SITE = https://github.com/htop-dev/htop/archive
+HTOP_VERSION = 3.2.2
+HTOP_SOURCE = htop-$(HTOP_VERSION).tar.xz
+HTOP_SITE = https://github.com/htop-dev/htop/releases/download/$(HTOP_VERSION)
 HTOP_DEPENDENCIES = ncurses
 # Prevent htop build system from searching the host paths
 HTOP_CONF_ENV = HTOP_NCURSES_CONFIG_SCRIPT=$(STAGING_DIR)/usr/bin/$(NCURSES_CONFIG_SCRIPTS)
-HTOP_LICENSE = GPL-2.0
+HTOP_LICENSE = GPL-2.0+
 HTOP_LICENSE_FILES = COPYING
 
-HTOP_AUTORECONF = YES
+# ac_cv_prog_cc_c99 is required for BR2_USE_WCHAR=n because the C99 test
+# provided by autoconf relies on wchar_t.
+HTOP_CONF_ENV += ac_cv_prog_cc_c99=-std=gnu99
 
-define HTOP_RUN_AUTOGEN
-	cd $(@D) && PATH=$(BR_PATH) ./autogen.sh
-endef
-HTOP_CONFIGURE_HOOKS += HTOP_RUN_AUTOGEN
-
-ifeq ($(BR2_PACKAGE_NCURSES_WCHAR),y)
-HTOP_CONF_OPT += --enable-unicode
+ifeq ($(BR2_PACKAGE_HWLOC),y)
+HTOP_CONF_OPTS += --enable-hwloc
+HTOP_DEPENDENCIES += hwloc
 else
-HTOP_CONF_OPT += --disable-unicode
+HTOP_CONF_OPTS += --disable-hwloc
 endif
 
-# ARC uses an old uClibc that needs dladdr() for backtrace support,
-# which doesn't work for static only scenario, so as a workaround, we
-# pretend that execinfo.h is not available.
-ifeq ($(BR2_arc)$(BR2_PREFER_STATIC_LIB),yy)
-HTOP_CONF_ENV += ac_cv_header_execinfo_h=no
+ifeq ($(BR2_PACKAGE_LIBCAP),y)
+HTOP_CONF_OPTS += --enable-capabilities
+HTOP_DEPENDENCIES += libcap
+else
+HTOP_CONF_OPTS += --disable-capabilities
+endif
+
+ifeq ($(BR2_PACKAGE_LM_SENSORS),y)
+HTOP_CONF_OPTS += --enable-sensors
+HTOP_DEPENDENCIES += lm-sensors
+else
+HTOP_CONF_OPTS += --disable-sensors
+endif
+
+ifeq ($(BR2_PACKAGE_NCURSES_WCHAR),y)
+HTOP_CONF_OPTS += --enable-unicode
+else
+HTOP_CONF_OPTS += --disable-unicode
 endif
 
 $(eval $(autotools-package))

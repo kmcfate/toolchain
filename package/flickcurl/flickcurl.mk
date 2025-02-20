@@ -4,13 +4,13 @@
 #
 ################################################################################
 
-FLICKCURL_VERSION = 1.25
+FLICKCURL_VERSION = 1.26
 FLICKCURL_SITE = http://download.dajobe.org/flickcurl
-FLICKCURL_LICENSE = LGPLv2.1+ or GPLv2+ or Apache 2.0+
+FLICKCURL_LICENSE = LGPL-2.1+ or GPL-2.0+ or Apache-2.0+
 FLICKCURL_LICENSE_FILES = COPYING COPYING.LIB LICENSE-2.0.txt LICENSE.html
 FLICKCURL_INSTALL_STAGING = YES
 FLICKCURL_CONFIG_SCRIPTS = flickcurl-config
-FLICKCURL_CONF_OPT = --without-curl-config --without-xml2-config --without-raptor
+FLICKCURL_CONF_OPTS = --without-curl-config --without-xml2-config --without-raptor
 FLICKCURL_DEPENDENCIES = libcurl libxml2 host-pkgconf
 
 ifeq ($(BR2_PACKAGE_FLICKCURL_UTILS),)

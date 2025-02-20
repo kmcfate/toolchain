@@ -4,22 +4,26 @@
 #
 ################################################################################
 
-LIBSNDFILE_VERSION = 1.0.25
-LIBSNDFILE_SITE = http://www.mega-nerd.com/libsndfile/files
+LIBSNDFILE_VERSION = 1.2.2
+LIBSNDFILE_SOURCE = libsndfile-$(LIBSNDFILE_VERSION).tar.xz
+LIBSNDFILE_SITE = https://github.com/libsndfile/libsndfile/releases/download/$(LIBSNDFILE_VERSION)
 LIBSNDFILE_INSTALL_STAGING = YES
-LIBSNDFILE_LICENSE = LGPLv2.1+
+LIBSNDFILE_LICENSE = LGPL-2.1+
 LIBSNDFILE_LICENSE_FILES = COPYING
+LIBSNDFILE_CPE_ID_VENDOR = libsndfile_project
+LIBSNDFILE_DEPENDENCIES = host-pkgconf
 
-ifeq ($(BR2_PACKAGE_FLAC),y)
-LIBSNDFILE_DEPENDENCIES += flac
-endif
+LIBSNDFILE_CONF_ENV = ac_cv_prog_cc_c99='-std=gnu99'
+LIBSNDFILE_CONF_OPTS = \
+	--disable-sqlite \
+	--disable-alsa \
+	--disable-full-suite
 
-ifeq ($(BR2_PACKAGE_LIBOGG),y)
-LIBSNDFILE_DEPENDENCIES += libogg
-endif
-
-ifeq ($(BR2_PACKAGE_LIBVORBIS),y)
-LIBSNDFILE_DEPENDENCIES += libvorbis
+ifeq ($(BR2_PACKAGE_FLAC)$(BR2_PACKAGE_LIBVORBIS)$(BR2_PACKAGE_OPUS),yyy)
+LIBSNDFILE_DEPENDENCIES += flac host-pkgconf libvorbis opus
+LIBSNDFILE_CONF_OPTS += --enable-external-libs
+else
+LIBSNDFILE_CONF_OPTS += --disable-external-libs
 endif
 
 $(eval $(autotools-package))

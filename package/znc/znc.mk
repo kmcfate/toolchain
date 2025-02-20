@@ -4,46 +4,46 @@
 #
 ################################################################################
 
-ZNC_VERSION = b396cafdb249544164ed02942a5babba59e519a3
-ZNC_SITE = $(call github,znc,znc,$(ZNC_VERSION))
+ZNC_VERSION = 1.8.2
+ZNC_SITE = http://znc.in/releases/archive
 ZNC_LICENSE = Apache-2.0
 ZNC_LICENSE_FILES = LICENSE
-ZNC_DEPENDENCIES = host-pkgconf host-autoconf host-automake
-ZNC_CONF_OPT = --disable-perl
-
-# The standard <pkg>_AUTORECONF = YES invocation doesn't work for this
-# package, because it does not use automake in a normal way.
-define ZNC_RUN_AUTOGEN
-	cd $(@D) && PATH=$(BR_PATH) ./autogen.sh
-endef
-ZNC_PRE_CONFIGURE_HOOKS += ZNC_RUN_AUTOGEN
+ZNC_CPE_ID_VENDOR = znc
+ZNC_DEPENDENCIES = host-pkgconf
+ZNC_CONF_OPTS = -DWANT_CYRUS=OFF -DWANT_I18N=OFF -DWANT_PERL=OFF
 
 ifeq ($(BR2_PACKAGE_ICU),y)
 ZNC_DEPENDENCIES += icu
-ZNC_CONF_OPT += --enable-icu
+ZNC_CONF_OPTS += -DWANT_ICU=ON
 else
-ZNC_CONF_OPT += --disable-icu
+ZNC_CONF_OPTS += -DWANT_ICU=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_OPENSSL),y)
 ZNC_DEPENDENCIES += openssl
-ZNC_CONF_OPT += --enable-openssl
+ZNC_CONF_OPTS += -DWANT_OPENSSL=ON
 else
-ZNC_CONF_OPT += --disable-openssl
+ZNC_CONF_OPTS += -DWANT_OPENSSL=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_ZLIB),y)
 ZNC_DEPENDENCIES += zlib
-ZNC_CONF_OPT += --enable-zlib
+ZNC_CONF_OPTS += -DWANT_ZLIB=ON
 else
-ZNC_CONF_OPT += --disable-zlib
+ZNC_CONF_OPTS += -DWANT_ZLIB=OFF
 endif
 
-ifeq ($(BR2_PACKAGE_PYTHON3),y)
+# python support depends on icu
+ifeq ($(BR2_PACKAGE_ICU)$(BR2_PACKAGE_PYTHON3),yy)
 ZNC_DEPENDENCIES += python3 host-swig
-ZNC_CONF_OPT += --enable-python=python3
+ZNC_CONF_OPTS += \
+	-DWANT_PYTHON=ON \
+	-DWANT_PYTHON_VERSION=python3 \
+	-DWANT_SWIG=ON
 else
-ZNC_CONF_OPT += --disable-python
+ZNC_CONF_OPTS += \
+	-DWANT_PYTHON=OFF \
+	-DWANT_SWIG=OFF
 endif
 
-$(eval $(autotools-package))
+$(eval $(cmake-package))

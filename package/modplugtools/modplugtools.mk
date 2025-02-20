@@ -1,18 +1,20 @@
-#############################################################
+################################################################################
 #
 # modplugtools
 #
-#############################################################
+################################################################################
+
 MODPLUGTOOLS_VERSION = 0.5.3
 MODPLUGTOOLS_SITE = http://downloads.sourceforge.net/project/modplug-xmms/modplug-tools
+MODPLUGTOOLS_LICENSE = GPL-3.0
+MODPLUGTOOLS_LICENSE_FILES = COPYING
 
-MODPLUGTOOLS_DEPENDENCIES = libmodplug libao
+MODPLUGTOOLS_DEPENDENCIES = libao libmodplug
 
-# Only play through libao: some platforms don't have OSS support and for those
-# that do, playing through libao is still going to be sufficient.
-define MODPLUGTOOLS_REMOVE_MODPLUGPLAY
-	rm $(TARGET_DIR)/usr/bin/modplugplay
-endef
-MODPLUGTOOLS_POST_INSTALL_TARGET_HOOKS += MODPLUGTOOLS_REMOVE_MODPLUGPLAY
+# Only build the 'mp123' subdir, which contains 'modplug123' that plays through
+# various backends via libao. This excludes the 'mpplay' subdir, which contains
+# 'modplugplay' that can play only through the deprecated OSS interface.
+MODPLUGTOOLS_MAKE_OPTS = SUBDIRS=mp123
+MODPLUGTOOLS_INSTALL_TARGET_OPTS = SUBDIRS=mp123 DESTDIR=$(TARGET_DIR) install
 
 $(eval $(autotools-package))
