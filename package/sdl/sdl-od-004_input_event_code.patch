@@ -1,0 +1,10 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmevents.c	2021-06-14 12:37:57.505759315 +0200
++++ b/src/video/kmsdrm/SDL_kmsdrmevents.c	2021-06-14 12:38:10.917854470 +0200
+@@ -18,7 +18,6 @@
+ #include <errno.h>
+ #include <libudev.h>
+ #include <linux/input.h>
+-#include <linux/input-event-codes.h>
+ #include <unistd.h>
+ 
+ static drm_input_dev * KMSDRM_GetInputDevice(const char *property)

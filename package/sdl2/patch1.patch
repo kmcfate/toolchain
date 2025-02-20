@@ -1,0 +1,65 @@
+--- a/configure	2019-07-23 21:41:00.000000000 +0200
++++ b/configure 2021-06-04 23:49:15.191268035 +0200
+@@ -872,6 +872,7 @@
+ enable_render_metal
+ enable_video_directfb
+ enable_directfb_shared
++enable_video_fbdev
+ enable_video_kmsdrm
+ enable_kmsdrm_shared
+ enable_video_dummy
+@@ -1651,6 +1652,7 @@
+   --enable-video-directfb use DirectFB video driver [[default=no]]
+   --enable-directfb-shared
+                           dynamically load directfb support [[default=yes]]
++  --enable-video-fbdev    Enable the framebuffer video backend [[default=yes]]
+   --enable-video-kmsdrm   use KMSDRM video driver [[default=no]]
+   --enable-kmsdrm-shared  dynamically load kmsdrm support [[default=yes]]
+   --enable-video-dummy    use dummy video driver [[default=yes]]
+@@ -21732,6 +21734,26 @@
+         fi
+     fi
+ }
++ 
++CheckFBDEV()
++{
++if test x$ARCH = xlinux -a x$enable_video = xyes; then
++	# Check whether --enable-video-fbdev was given.
++if test "${enable_video_fbdev+set}" = set; then :
++  enableval=$enable_video_fbdev;
++else
++  enable_video_fbdev=yes
++fi
++
++	if test x$enable_video_fbdev = xyes; then
++		have_video=yes
++		SUMMARY_video="${SUMMARY_video} fbdev"
++
++	$as_echo "#define SDL_VIDEO_DRIVER_FBDEV 1" >>confdefs.h
++
++		fi
++	fi
++}
+ 
+ CheckKMSDRM()
+ {
+@@ -24459,6 +24481,7 @@
+         CheckRPI
+         CheckX11
+         CheckDirectFB
++		CheckFBDEV
+         CheckKMSDRM
+         CheckOpenGLX11
+         CheckOpenGLESX11
+@@ -24632,6 +24655,11 @@
+         if test x$use_input_events = xyes; then
+             SOURCES="$SOURCES $srcdir/src/core/linux/SDL_evdev*.c"
+         fi
++		# Set up files for the fbdev video driver
++		if test x$enable_video_fbdev = xyes; then
++			SOURCES="$SOURCES $srcdir/src/video/fbdev/*.c"
++			$as_echo "#define SDL_VIDEO_DRIVER_FB 1" >>confdefs.h
++		fi
+         # Set up other core UNIX files
+         SOURCES="$SOURCES $srcdir/src/core/linux/SDL_threadprio.c"
+         SOURCES="$SOURCES $srcdir/src/core/unix/*.c"

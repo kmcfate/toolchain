@@ -1,0 +1,11 @@
+--- a/src/popthelp.c	2020-05-18 09:43:13.000000000 +0200
++++ b/src/popthelp.c	2021-06-12 09:40:58.501869176 +0200
+@@ -15,7 +15,7 @@
+ #include <sys/ioctl.h>
+ #endif
+ 
+-#define	POPT_WCHAR_HACK
++/* #define	POPT_WCHAR_HACK */
+ #ifdef 	POPT_WCHAR_HACK
+ #include <wchar.h>			/* for mbsrtowcs */
+ #endif
